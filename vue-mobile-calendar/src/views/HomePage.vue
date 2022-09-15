@@ -15,9 +15,7 @@
     <div class="week-order">
       <p>第一列显示周序：</p>
       <input type="checkbox" id="checkbox" v-model="showWeekOrder" />
-      <label for="checkbox">{{
-        showWeekOrder ? "显示周序" : "隐藏周序"
-      }}</label>
+      <label for="checkbox">显示周序</label>
     </div>
     <div class="week-title">
       <p>自定义周开始日期</p>
@@ -102,11 +100,6 @@ function onTypeClick(idx: number) {
   curTypeIdx.value = idx;
 
   dateSelectType.value = curTypeIdx.value;
-  calendarData.value = {
-    selectedDateInfos: [],
-    rangeStart: "",
-    rangeEnd: "",
-  };
 }
 
 function handleCellClick(idx: number) {

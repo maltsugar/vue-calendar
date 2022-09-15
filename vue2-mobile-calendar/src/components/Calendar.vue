@@ -104,7 +104,7 @@
 </template>
 
 <script>
-import { getFullMonthDaysInDate } from "@/helper/calendarTools.js";
+import { getFullMonthDaysInDate, deepCopy } from "@/helper/calendarTools.js";
 
 import dayjs from "dayjs";
 const isBetween = require("dayjs/plugin/isBetween");
@@ -156,6 +156,8 @@ export default {
       month0: [], // 当前显示月
       monthA: [], // 当前显示月上一月
       monthB: [], // 当前显示月下一月
+
+      m_priviteSelectionData: null,
     };
   },
   computed: {
@@ -179,11 +181,22 @@ export default {
     },
 
     // prop传入的初始值
-    priviteSelectionData() {
-      return this.initData;
+    priviteSelectionData: {
+      get() {
+        if (!this.m_priviteSelectionData) {
+          this.m_priviteSelectionData = deepCopy(this.initData);
+        }
+        return this.m_priviteSelectionData;
+      },
+      set(newVal) {
+        this.m_priviteSelectionData = newVal;
+      },
     },
     m_weekStartDay() {
       return this.weekStartDay;
+    },
+    m_selectionType() {
+      return this.selectionType;
     },
   },
 
@@ -192,6 +205,10 @@ export default {
       this.reloadCalendarData();
     },
     m_weekStartDay() {
+      this.reloadCalendarData();
+    },
+    m_selectionType() {
+      this.priviteSelectionData = deepCopy(this.initData);
       this.reloadCalendarData();
     },
   },
@@ -226,16 +243,16 @@ export default {
         return;
       }
 
-      if (this.selectionType == "single") {
+      if (this.m_selectionType == "single") {
         // 单选
         this.priviteSelectionData.selectedDateInfos = [];
         this.priviteSelectionData.selectedDateInfos.push(day.dateInfo);
         this.$emit(
           "didSelectedDate",
           this.priviteSelectionData,
-          this.selectionType
+          this.m_selectionType
         );
-      } else if (this.selectionType == "multiple") {
+      } else if (this.m_selectionType == "multiple") {
         // 多选
         if (
           !this.priviteSelectionData.selectedDateInfos.includes(day.dateInfo)
@@ -245,9 +262,9 @@ export default {
         this.$emit(
           "didSelectedDate",
           this.priviteSelectionData,
-          this.selectionType
+          this.m_selectionType
         );
-      } else if (this.selectionType == "range") {
+      } else if (this.m_selectionType == "range") {
         if (
           this.priviteSelectionData.rangeStart &&
           this.priviteSelectionData.rangeEnd
@@ -273,13 +290,13 @@ export default {
             this.$emit(
               "didSelectedDate",
               this.priviteSelectionData,
-              this.selectionType
+              this.m_selectionType
             );
           } else {
             this.priviteSelectionData.rangeStart = day.dateInfo;
           }
         }
-      } else if (this.selectionType == "week") {
+      } else if (this.m_selectionType == "week") {
         this.handleWeekIdxClick(week, false);
       }
 
@@ -289,7 +306,7 @@ export default {
       });
     },
     handleWeekIdxClick(week, reload = true) {
-      if (this.selectionType == "week") {
+      if (this.m_selectionType == "week") {
         this.priviteSelectionData.rangeStart = null;
         this.priviteSelectionData.rangeEnd = null;
         let start = week.days[0];
@@ -300,7 +317,7 @@ export default {
         this.$emit(
           "didSelectedDate",
           this.priviteSelectionData,
-          this.selectionType
+          this.m_selectionType
         );
       }
       if (reload) {
@@ -369,7 +386,7 @@ export default {
     },
 
     checkSelectedDate(monthArr) {
-      if (["range", "week"].includes(this.selectionType)) {
+      if (["range", "week"].includes(this.m_selectionType)) {
         // 重置所有选中状态
         for (const week of monthArr) {
           week.isSelected = false;
@@ -418,7 +435,7 @@ export default {
                 )
               ) {
                 day.isSelected = true;
-                if (this.selectionType == "week" && !week.isSelected) {
+                if (this.m_selectionType == "week" && !week.isSelected) {
                   week.isSelected = true;
                 }
               }

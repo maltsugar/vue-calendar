@@ -112,6 +112,7 @@ import dayjs from "dayjs";
 import isBetween from "dayjs/plugin/isBetween";
 dayjs.extend(isBetween);
 import * as calendarTools from "@/helper/calendarTools";
+import { deepClone } from "@/helper/helper";
 
 export enum CalendarSelectionType {
   single = 0,
@@ -179,6 +180,8 @@ let month0 = ref<calendarTools.WeekConfig[]>([]); // 当前显示月
 let monthA = ref<calendarTools.WeekConfig[]>([]); // 当前显示月上一月
 let monthB = ref<calendarTools.WeekConfig[]>([]); // 当前显示月下一月
 
+let m_priviteSelectionData = ref<CalendarSharedData | null>(null);
+
 const dataArr = computed(() => [monthA.value, month0.value, monthB.value]);
 const showWeekIdx = computed(() => {
   let flag = false;
@@ -201,8 +204,16 @@ const curTitle = computed(() => {
 });
 
 // prop传入的初始值
-const priviteSelectionData = computed(() => {
-  return props.initData;
+let priviteSelectionData = computed({
+  get() {
+    if (!m_priviteSelectionData.value) {
+      m_priviteSelectionData.value = deepClone(props.initData);
+    }
+    return m_priviteSelectionData.value;
+  },
+  set(newVal) {
+    m_priviteSelectionData.value = newVal;
+  },
 });
 watch(priviteSelectionData, () => {
   reloadCalendarData();
@@ -211,8 +222,15 @@ watch(priviteSelectionData, () => {
 const m_weekStartDay = computed(() => {
   return props.weekStartDay;
 });
-
 watch(m_weekStartDay, () => {
+  reloadCalendarData();
+});
+
+const m_selectionType = computed(() => {
+  return props.selectionType;
+});
+watch(m_selectionType, () => {
+  priviteSelectionData.value = deepClone(props.initData);
   reloadCalendarData();
 });
 
@@ -245,20 +263,24 @@ function handleDayClick(
   }
   let { selectedDateInfos, rangeStart, rangeEnd } = priviteSelectionData.value;
 
-  if (props.selectionType == CalendarSelectionType.single) {
+  if (m_selectionType.value == CalendarSelectionType.single) {
     // 单选
     if (selectedDateInfos) {
       selectedDateInfos.length = 0;
     }
     selectedDateInfos?.push(day.dateInfo);
-    emit("didSelectedDate", unref(priviteSelectionData), props.selectionType);
-  } else if (props.selectionType == CalendarSelectionType.multiple) {
+    emit("didSelectedDate", unref(priviteSelectionData), m_selectionType.value);
+  } else if (m_selectionType.value == CalendarSelectionType.multiple) {
     // 多选
     if (!selectedDateInfos?.includes(day.dateInfo)) {
       selectedDateInfos?.push(day.dateInfo);
-      emit("didSelectedDate", unref(priviteSelectionData), props.selectionType);
+      emit(
+        "didSelectedDate",
+        unref(priviteSelectionData),
+        m_selectionType.value
+      );
     }
-  } else if (props.selectionType == CalendarSelectionType.range) {
+  } else if (m_selectionType.value == CalendarSelectionType.range) {
     if (rangeStart && rangeEnd) {
       // 两个都选了  重新选择开始的
       priviteSelectionData.value.rangeEnd = undefined;
@@ -275,13 +297,13 @@ function handleDayClick(
         emit(
           "didSelectedDate",
           unref(priviteSelectionData),
-          props.selectionType
+          m_selectionType.value
         );
       } else {
         priviteSelectionData.value.rangeStart = day.dateInfo;
       }
     }
-  } else if (props.selectionType == CalendarSelectionType.week) {
+  } else if (m_selectionType.value == CalendarSelectionType.week) {
     handleWeekIdxClick(week, false);
   }
 
@@ -289,7 +311,7 @@ function handleDayClick(
 }
 
 function handleWeekIdxClick(week: calendarTools.WeekConfig, reload = true) {
-  if (props.selectionType == CalendarSelectionType.week) {
+  if (m_selectionType.value == CalendarSelectionType.week) {
     priviteSelectionData.value.rangeStart = undefined;
     priviteSelectionData.value.rangeEnd = undefined;
     let start = week.days[0];
@@ -298,7 +320,7 @@ function handleWeekIdxClick(week: calendarTools.WeekConfig, reload = true) {
     priviteSelectionData.value.rangeStart = start.dateInfo;
     priviteSelectionData.value.rangeEnd = end.dateInfo;
 
-    emit("didSelectedDate", unref(priviteSelectionData), props.selectionType);
+    emit("didSelectedDate", unref(priviteSelectionData), m_selectionType.value);
   }
   if (reload) {
     checkSelectedDate(month0.value);
@@ -374,7 +396,7 @@ const checkSelectedDate = (monthArr: calendarTools.WeekConfig[]) => {
 
   if (
     [CalendarSelectionType.range, CalendarSelectionType.week].includes(
-      props.selectionType
+      m_selectionType.value
     )
   ) {
     // 重置所有选中状态
@@ -416,7 +438,7 @@ const checkSelectedDate = (monthArr: calendarTools.WeekConfig[]) => {
           if (day.orign.isBetween(rangeStart, rangeEnd, "day", "[]")) {
             day.isSelected = true;
             if (
-              props.selectionType == CalendarSelectionType.week &&
+              m_selectionType.value == CalendarSelectionType.week &&
               !week.isSelected
             ) {
               week.isSelected = true;
