@@ -122,7 +122,7 @@ export enum CalendarSelectionType {
 </script>
 
 <script setup lang="ts">
-import { ref, unref, computed, onMounted, toRef } from "vue";
+import { ref, unref, computed, onMounted, watch } from "vue";
 
 export interface CalendarSharedData {
   selectedDateInfos?: string[];
@@ -179,13 +179,6 @@ let month0 = ref<calendarTools.WeekConfig[]>([]); // 当前显示月
 let monthA = ref<calendarTools.WeekConfig[]>([]); // 当前显示月上一月
 let monthB = ref<calendarTools.WeekConfig[]>([]); // 当前显示月下一月
 
-// 选择的日期
-// let selectedDateInfos = ref<string[]>([]);
-// let rangeStart = ref<string | null>("");
-// let rangeEnd = ref<string | null>("");
-// prop传入的初始值
-const priviteSelectionData = ref(props.initData);
-
 const dataArr = computed(() => [monthA.value, month0.value, monthB.value]);
 const showWeekIdx = computed(() => {
   let flag = false;
@@ -205,6 +198,22 @@ const curTitle = computed(() => {
   let date = curDate.value;
   let fmt = "YYYY年MM月";
   return date.format(fmt);
+});
+
+// prop传入的初始值
+const priviteSelectionData = computed(() => {
+  return props.initData;
+});
+watch(priviteSelectionData, () => {
+  reloadCalendarData();
+});
+
+const m_weekStartDay = computed(() => {
+  return props.weekStartDay;
+});
+
+watch(m_weekStartDay, () => {
+  reloadCalendarData();
 });
 
 // 快捷切换日期
@@ -337,20 +346,22 @@ const change = (type: number) => {
 };
 
 const reloadCalendarData = () => {
+  console.log("刷新日历数据");
+
   let _dateA = curDate.value.add(-1, "month");
   let _dateB = curDate.value.add(1, "month");
 
   monthA.value = calendarTools.getFullMonthDaysInDate(
     _dateA,
-    props.weekStartDay
+    m_weekStartDay.value
   );
   month0.value = calendarTools.getFullMonthDaysInDate(
     curDate.value,
-    props.weekStartDay
+    m_weekStartDay.value
   );
   monthB.value = calendarTools.getFullMonthDaysInDate(
     _dateB,
-    props.weekStartDay
+    m_weekStartDay.value
   );
 
   checkSelectedDate(month0.value);
