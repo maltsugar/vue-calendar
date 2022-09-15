@@ -156,9 +156,6 @@ export default {
       month0: [], // 当前显示月
       monthA: [], // 当前显示月上一月
       monthB: [], // 当前显示月下一月
-
-      // prop传入的初始值
-      priviteSelectionData: { ...this.initData },
     };
   },
   computed: {
@@ -179,6 +176,23 @@ export default {
 
     dataArr() {
       return [this.monthA, this.month0, this.monthB];
+    },
+
+    // prop传入的初始值
+    priviteSelectionData() {
+      return this.initData;
+    },
+    m_weekStartDay() {
+      return this.weekStartDay;
+    },
+  },
+
+  watch: {
+    priviteSelectionData() {
+      this.reloadCalendarData();
+    },
+    m_weekStartDay() {
+      this.reloadCalendarData();
     },
   },
 
@@ -341,6 +355,7 @@ export default {
     },
 
     reloadCalendarData() {
+      // console.log("刷新日历数据");
       let _dateA = this.curDate.add(-1, "month");
       let _dateB = this.curDate.add(1, "month");
 

@@ -1,8 +1,45 @@
 <template>
   <div id="app">
+    <section class="demo">
+      <p>日期选取类型</p>
+      <ul class="type-wrapper">
+        <li
+          class="btn"
+          v-for="(item, index) in typeBtns"
+          :key="index"
+          :class="{ actived: index == curTypeIdx }"
+          @click="onTypeClick(index)"
+        >
+          {{ item }}
+        </li>
+      </ul>
+      <div class="week-order">
+        <p>第一列显示周序：</p>
+        <input type="checkbox" id="checkbox" v-model="showWeekOrder" />
+        <label for="checkbox">{{
+          showWeekOrder ? "显示周序" : "隐藏周序"
+        }}</label>
+      </div>
+      <div class="week-title">
+        <p>自定义周开始日期</p>
+        <ul class="week-idx-wrapper">
+          <li
+            v-for="(item, index) in weekTitlesConfig"
+            :key="index"
+            @click="handleCellClick(index)"
+          >
+            <span v-if="index == weekTilesConfigIdx">❤️</span>
+            {{ item.content.join("、") }}
+          </li>
+        </ul>
+      </div>
+    </section>
     <Calendar
-      selectionType="week"
-      :initData="calendarInfo"
+      :weekIndexTitle="weekIndexTitle"
+      :weekStartDay="weekStartDay"
+      :weekTitles="weekTitles"
+      :selectionType="dateSelectType"
+      :initData="calendarData"
       @didSelectedDate="canlendarHandle"
     />
   </div>
@@ -11,6 +48,24 @@
 <script>
 import Calendar from "@/components/Calendar.vue";
 
+const wtitlesConfig = () => [
+  {
+    startIdx: 0,
+    content: ["日", "一", "二", "三", "四", "五", "六"],
+  },
+  {
+    startIdx: 1,
+    content: ["一", "二", "三", "四", "五", "六", "日"],
+  },
+  {
+    startIdx: 0,
+    content: ["Sun", "Mon", "Tus", "Wed", "Thr", "Fri", "Sat"],
+  },
+  {
+    startIdx: 1,
+    content: ["Mon", "Tus", "Wed", "Thr", "Fri", "Sat", "Sun"],
+  },
+];
 export default {
   name: "App",
   components: {
@@ -18,7 +73,17 @@ export default {
   },
   data() {
     return {
-      calendarInfo: {
+      //demo
+      typeBtns: ["单选", "多选", "范围", "按周"],
+      curTypeIdx: 0,
+      showWeekOrder: true,
+      dateSelectType: "single",
+      weekStartDay: 0,
+
+      weekTitlesConfig: wtitlesConfig(),
+      weekTilesConfigIdx: 0,
+
+      calendarData: {
         selectedDateInfos: [],
         rangeStart: "",
         rangeEnd: "",
@@ -26,8 +91,56 @@ export default {
     };
   },
 
+  computed: {
+    weekIndexTitle() {
+      let t = "";
+      if (this.showWeekOrder) {
+        t = "周";
+      }
+      return t;
+    },
+
+    weekTitles() {
+      return this.weekTitlesConfig[this.weekTilesConfigIdx].content;
+    },
+  },
+
   methods: {
-    // 和calendarInfo一样
+    onTypeClick(idx) {
+      this.curTypeIdx = idx;
+      let type = "single";
+      switch (idx) {
+        case 1:
+          type = "multiple";
+          break;
+        case 2:
+          type = "range";
+          break;
+        case 3:
+          type = "week";
+          break;
+        default:
+          break;
+      }
+      this.dateSelectType = type;
+      this.calendarData = {
+        selectedDateInfos: [],
+        rangeStart: "",
+        rangeEnd: "",
+      };
+    },
+
+    handleCellClick(idx) {
+      for (let index = 0; index < this.weekTitlesConfig.length; index++) {
+        const item = this.weekTitlesConfig[index];
+        if (idx == index) {
+          this.weekStartDay = item.startIdx;
+          this.weekTilesConfigIdx = idx;
+        }
+      }
+    },
+
+    // 日历回调
     canlendarHandle(dateInfo, actionType) {
       console.log("dateInfo", dateInfo);
       console.log("actionType", actionType);
@@ -35,5 +148,58 @@ export default {
   },
 };
 </script>
+<style lang="scss" scoped>
+.demo {
+  height: 220px;
+  padding: 10px;
+  background-color: #f9f4dc;
+  p {
+    font-size: 14px;
+    font-weight: bold;
+  }
 
-<style></style>
+  .btn {
+    display: block;
+    width: 60px;
+    height: 20px;
+    line-height: 20px;
+    text-align: center;
+    border: 1px solid orchid;
+    border-radius: 10px;
+    color: #999;
+
+    &.actived {
+      background-color: #ef6f48;
+      color: #000;
+    }
+  }
+
+  .type-wrapper {
+    display: flex;
+    justify-content: space-around;
+  }
+
+  .week-order {
+    display: flex;
+    align-items: center;
+    input {
+      height: 20px;
+      width: 20px;
+    }
+  }
+
+  .week-title {
+    li {
+      height: 30px;
+      line-height: 30px;
+      border-bottom: 1px solid #ccc;
+      padding-left: 30px;
+      position: relative;
+      span {
+        position: absolute;
+        left: 5px;
+      }
+    }
+  }
+}
+</style>

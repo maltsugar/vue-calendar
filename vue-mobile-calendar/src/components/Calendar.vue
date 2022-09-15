@@ -346,7 +346,7 @@ const change = (type: number) => {
 };
 
 const reloadCalendarData = () => {
-  console.log("刷新日历数据");
+  // console.log("刷新日历数据");
 
   let _dateA = curDate.value.add(-1, "month");
   let _dateB = curDate.value.add(1, "month");
