@@ -1,15 +1,15 @@
 <template>
   <div id="app">
     <Calendar
-      selectionType="multiple"
-      :sharedData="calendarInfo"
+      selectionType="week"
+      :initData="calendarInfo"
       @didSelectedDate="canlendarHandle"
     />
   </div>
 </template>
 
 <script>
-import Calendar from "@/components/Calendar.vue"
+import Calendar from "@/components/Calendar.vue";
 
 export default {
   name: "App",
@@ -23,19 +23,17 @@ export default {
         rangeStart: "",
         rangeEnd: "",
       },
-    }
+    };
   },
 
   methods: {
     // 和calendarInfo一样
     canlendarHandle(dateInfo, actionType) {
-      // console.log(dateInfo === this.calendarInfo) // true
-      console.log("dateInfo", dateInfo)
-      console.log("actionType", actionType)
+      console.log("dateInfo", dateInfo);
+      console.log("actionType", actionType);
     },
   },
-}
+};
 </script>
 
-<style>
-</style>
+<style></style>

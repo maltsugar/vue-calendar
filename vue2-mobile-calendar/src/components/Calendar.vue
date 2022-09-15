@@ -104,14 +104,14 @@
 </template>
 
 <script>
-import { getFullMonthDaysInDate } from "@/helper/calendarTools.js"
+import { getFullMonthDaysInDate } from "@/helper/calendarTools.js";
 
-import dayjs from "dayjs"
-const isBetween = require("dayjs/plugin/isBetween")
-dayjs.extend(isBetween)
+import dayjs from "dayjs";
+const isBetween = require("dayjs/plugin/isBetween");
+dayjs.extend(isBetween);
 
-let touchStartX
-let touchStartY
+let touchStartX;
+let touchStartY;
 
 export default {
   name: "Calendar",
@@ -130,16 +130,15 @@ export default {
 
     /**
      * 选择的日期， single/multiple使用selectedDateInfos， range/week使用rangeStart、rangeEnd
-     * 此对象共享数据， 组件更新，外部使用组件可以同步获取更新后的值
      */
-    sharedData: {
+    initData: {
       type: Object,
       default: () => {
         return {
           selectedDateInfos: [],
           rangeStart: "",
           rangeEnd: "",
-        }
+        };
       },
     },
   },
@@ -157,31 +156,34 @@ export default {
       month0: [], // 当前显示月
       monthA: [], // 当前显示月上一月
       monthB: [], // 当前显示月下一月
-    }
+
+      // prop传入的初始值
+      priviteSelectionData: { ...this.initData },
+    };
   },
   computed: {
     showWeekIdx() {
-      return this.weekIndexTitle?.length > 0
+      return this.weekIndexTitle?.length > 0;
     },
     weekHeaders() {
       if (this.weekIndexTitle) {
-        return [this.weekIndexTitle, ...this.weekTitles]
+        return [this.weekIndexTitle, ...this.weekTitles];
       }
-      return this.weekTitles
+      return this.weekTitles;
     },
     curTitle() {
-      let date = this.curDate
-      let fmt = "YYYY年MM月"
-      return date.format(fmt)
+      let date = this.curDate;
+      let fmt = "YYYY年MM月";
+      return date.format(fmt);
     },
 
     dataArr() {
-      return [this.monthA, this.month0, this.monthB]
+      return [this.monthA, this.month0, this.monthB];
     },
   },
 
   mounted() {
-    this.reloadCalendarData()
+    this.reloadCalendarData();
   },
 
   methods: {
@@ -189,188 +191,220 @@ export default {
     handleChangBtnAction(val) {
       if (Math.abs(val) == 1) {
         // 切月份
-        this.change(val)
+        this.change(val);
       }
 
       if (Math.abs(val) == 2) {
         // 切年份
         if (val < 0) {
           // 向过去切 =  右滑
-          this.curDate = this.curDate.add(-1, "year")
+          this.curDate = this.curDate.add(-1, "year");
         } else {
           // 向未来切 =  左滑
-          this.curDate = this.curDate.add(1, "year")
+          this.curDate = this.curDate.add(1, "year");
         }
-        this.reloadCalendarData()
+        this.reloadCalendarData();
       }
     },
     // 日期点击事件
     handleDayClick(day, week) {
       if (day.isGray) {
-        return
+        return;
       }
 
       if (this.selectionType == "single") {
-        this.sharedData.selectedDateInfos = []
-        this.sharedData.selectedDateInfos.push(day.dateInfo)
-        this.$emit("didSelectedDate", this.sharedData, this.selectionType)
+        // 单选
+        this.priviteSelectionData.selectedDateInfos = [];
+        this.priviteSelectionData.selectedDateInfos.push(day.dateInfo);
+        this.$emit(
+          "didSelectedDate",
+          this.priviteSelectionData,
+          this.selectionType
+        );
       } else if (this.selectionType == "multiple") {
-        if (!this.sharedData.selectedDateInfos.includes(day.dateInfo)) {
-          this.sharedData.selectedDateInfos.push(day.dateInfo)
+        // 多选
+        if (
+          !this.priviteSelectionData.selectedDateInfos.includes(day.dateInfo)
+        ) {
+          this.priviteSelectionData.selectedDateInfos.push(day.dateInfo);
         }
-        this.$emit("didSelectedDate", this.sharedData, this.selectionType)
+        this.$emit(
+          "didSelectedDate",
+          this.priviteSelectionData,
+          this.selectionType
+        );
       } else if (this.selectionType == "range") {
-        if (this.sharedData.rangeStart && this.sharedData.rangeEnd) {
+        if (
+          this.priviteSelectionData.rangeStart &&
+          this.priviteSelectionData.rangeEnd
+        ) {
           // 两个都选了  重新选择开始的
-          this.sharedData.rangeEnd = null
-          this.sharedData.rangeStart = day.dateInfo
+          this.priviteSelectionData.rangeEnd = null;
+          this.priviteSelectionData.rangeStart = day.dateInfo;
         } else {
-          if (this.sharedData.rangeStart) {
-            if (day.orign.isBefore(dayjs(this.sharedData.rangeStart), "day")) {
+          if (this.priviteSelectionData.rangeStart) {
+            if (
+              day.orign.isBefore(
+                dayjs(this.priviteSelectionData.rangeStart),
+                "day"
+              )
+            ) {
               // 第二次选的 是否小于 第一次的
-              this.sharedData.rangeEnd = this.sharedData.rangeStart
-              this.sharedData.rangeStart = day.dateInfo
+              this.priviteSelectionData.rangeEnd =
+                this.priviteSelectionData.rangeStart;
+              this.priviteSelectionData.rangeStart = day.dateInfo;
             } else {
-              this.sharedData.rangeEnd = day.dateInfo
+              this.priviteSelectionData.rangeEnd = day.dateInfo;
             }
-            this.$emit("didSelectedDate", this.sharedData, this.selectionType)
+            this.$emit(
+              "didSelectedDate",
+              this.priviteSelectionData,
+              this.selectionType
+            );
           } else {
-            this.sharedData.rangeStart = day.dateInfo
+            this.priviteSelectionData.rangeStart = day.dateInfo;
           }
         }
       } else if (this.selectionType == "week") {
-        this.handleWeekIdxClick(week, false)
+        this.handleWeekIdxClick(week, false);
       }
 
       this.$nextTick(() => {
-        this.checkSelectedDate(this.month0)
-        this.$forceUpdate()
-      })
+        this.checkSelectedDate(this.month0);
+        this.$forceUpdate();
+      });
     },
     handleWeekIdxClick(week, reload = true) {
       if (this.selectionType == "week") {
-        this.sharedData.rangeStart = null
-        this.sharedData.rangeEnd = null
-        let start = week.days[0]
-        let end = week.days[week.days.length - 1]
-        this.sharedData.rangeStart = start.dateInfo
-        this.sharedData.rangeEnd = end.dateInfo
+        this.priviteSelectionData.rangeStart = null;
+        this.priviteSelectionData.rangeEnd = null;
+        let start = week.days[0];
+        let end = week.days[week.days.length - 1];
+        this.priviteSelectionData.rangeStart = start.dateInfo;
+        this.priviteSelectionData.rangeEnd = end.dateInfo;
 
-        this.$emit("didSelectedDate", this.sharedData, this.selectionType)
+        this.$emit(
+          "didSelectedDate",
+          this.priviteSelectionData,
+          this.selectionType
+        );
       }
       if (reload) {
         this.$nextTick(() => {
-          this.checkSelectedDate(this.month0)
-          this.$forceUpdate()
-        })
+          this.checkSelectedDate(this.month0);
+          this.$forceUpdate();
+        });
       }
     },
 
     touchstart(event) {
-      let _etouch = event.touches[0]
-      touchStartX = _etouch.clientX
-      touchStartY = _etouch.clientY
+      let _etouch = event.touches[0];
+      touchStartX = _etouch.clientX;
+      touchStartY = _etouch.clientY;
       this.touch = {
         x: 0,
         y: 0,
-      }
-      this.isTouching = true
+      };
+      this.isTouching = true;
     },
     touchmove(event) {
-      let _etouch = event.touches[0]
+      let _etouch = event.touches[0];
       this.touch = {
         x: (_etouch.clientX - touchStartX) / this.$refs.base.offsetWidth,
         y: (_etouch.clientY - touchStartY) / this.$refs.base.offsetHeight,
-      }
+      };
       // console.log("x", _etouch.clientX)
       // console.log(JSON.stringify(this.touch))
     },
     touchend(event) {
-      this.isTouching = false
+      this.isTouching = false;
       if (Math.abs(this.touch.x) > 0.4) {
         if (this.touch.x > 0) {
           // console.log("右滑")
-          this.change(-1)
+          this.change(-1);
         } else if (this.touch.x < 0) {
           // console.log("左滑")
-          this.change(1)
+          this.change(1);
         }
       } else {
         this.touch = {
           x: 0,
           y: 0,
-        }
+        };
       }
     },
 
     change(type) {
-      this.translateX -= type
-      this.curDate = this.curDate.add(type, "month")
-      this.reloadCalendarData()
+      this.translateX -= type;
+      this.curDate = this.curDate.add(type, "month");
+      this.reloadCalendarData();
     },
 
     reloadCalendarData() {
-      let _dateA = this.curDate.add(-1, "month")
-      let _dateB = this.curDate.add(1, "month")
+      let _dateA = this.curDate.add(-1, "month");
+      let _dateB = this.curDate.add(1, "month");
 
-      this.monthA = getFullMonthDaysInDate(_dateA, this.weekStartDay)
-      this.month0 = getFullMonthDaysInDate(this.curDate, this.weekStartDay)
-      this.monthB = getFullMonthDaysInDate(_dateB, this.weekStartDay)
+      this.monthA = getFullMonthDaysInDate(_dateA, this.weekStartDay);
+      this.month0 = getFullMonthDaysInDate(this.curDate, this.weekStartDay);
+      this.monthB = getFullMonthDaysInDate(_dateB, this.weekStartDay);
 
-      this.checkSelectedDate(this.month0)
-      this.checkSelectedDate(this.monthA)
-      this.checkSelectedDate(this.monthB)
+      this.checkSelectedDate(this.month0);
+      this.checkSelectedDate(this.monthA);
+      this.checkSelectedDate(this.monthB);
     },
 
     checkSelectedDate(monthArr) {
       if (["range", "week"].includes(this.selectionType)) {
         // 重置所有选中状态
         for (const week of monthArr) {
-          week.isSelected = false
+          week.isSelected = false;
           for (const day of week.days) {
-            day.isSelected = false
-            day.isRangeStart = false
-            day.isRangeEnd = false
+            day.isSelected = false;
+            day.isRangeStart = false;
+            day.isRangeEnd = false;
           }
         }
 
-        if (this.sharedData.rangeStart) {
-          let start = dayjs(this.sharedData.rangeStart)
+        if (this.priviteSelectionData.rangeStart) {
+          let start = dayjs(this.priviteSelectionData.rangeStart);
           for (const week of monthArr) {
             for (const day of week.days) {
               if (day.orign.isSame(start, "day")) {
-                day.isSelected = true
-                day.isRangeStart = true
+                day.isSelected = true;
+                day.isRangeStart = true;
               }
             }
           }
         }
 
-        if (this.sharedData.rangeEnd) {
-          let end = dayjs(this.sharedData.rangeEnd)
+        if (this.priviteSelectionData.rangeEnd) {
+          let end = dayjs(this.priviteSelectionData.rangeEnd);
           for (const week of monthArr) {
             for (const day of week.days) {
               if (day.orign.isSame(end, "day")) {
-                day.isRangeEnd = true
+                day.isRangeEnd = true;
               }
             }
           }
         }
 
-        if (this.sharedData.rangeStart && this.sharedData.rangeEnd) {
+        if (
+          this.priviteSelectionData.rangeStart &&
+          this.priviteSelectionData.rangeEnd
+        ) {
           for (const week of monthArr) {
             for (const day of week.days) {
               if (
                 day.orign.isBetween(
-                  this.sharedData.rangeStart,
-                  this.sharedData.rangeEnd,
+                  this.priviteSelectionData.rangeStart,
+                  this.priviteSelectionData.rangeEnd,
                   "day",
                   "[]"
                 )
               ) {
-                day.isSelected = true
+                day.isSelected = true;
                 if (this.selectionType == "week" && !week.isSelected) {
-                  week.isSelected = true
+                  week.isSelected = true;
                 }
               }
             }
@@ -380,10 +414,10 @@ export default {
         // 单选或多选
         for (const week of monthArr) {
           for (const day of week.days) {
-            day.isSelected = false
-            for (const _sDay of this.sharedData.selectedDateInfos) {
+            day.isSelected = false;
+            for (const _sDay of this.priviteSelectionData.selectedDateInfos) {
               if (day.orign.isSame(dayjs(_sDay), "day")) {
-                day.isSelected = true
+                day.isSelected = true;
               }
             }
           }
@@ -391,7 +425,7 @@ export default {
       }
     },
   },
-}
+};
 </script>
 
 <style lang="scss" scoped>

@@ -122,10 +122,12 @@ export enum CalendarSelectionType {
 </script>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from "vue";
+import { ref, unref, computed, onMounted, toRef } from "vue";
 
-interface CalendarSharedData {
-  selectedDateInfos: string[];
+export interface CalendarSharedData {
+  selectedDateInfos?: string[];
+  rangeStart?: string;
+  rangeEnd?: string;
 }
 
 interface Props {
@@ -133,7 +135,11 @@ interface Props {
   weekIndexTitle?: string; // 周序号标题，不写 则不显示
   weekTitles?: Array<string>;
   selectionType?: CalendarSelectionType; // 日期选择类型
-  sharedData?: CalendarSharedData;
+
+  /**
+   * 选择的日期， single/multiple使用selectedDateInfos， range/week使用rangeStart、rangeEnd
+   */
+  initData?: CalendarSharedData;
 }
 
 let touchStartX: number;
@@ -144,7 +150,20 @@ const props = withDefaults(defineProps<Props>(), {
   weekIndexTitle: "周",
   weekTitles: () => ["一", "二", "三", "四", "五", "六", "日"],
   selectionType: CalendarSelectionType.single,
+  initData: () => ({
+    selectedDateInfos: [],
+    rangeStart: "",
+    rangeEnd: "",
+  }),
 });
+
+const emit = defineEmits<{
+  (
+    e: "didSelectedDate",
+    selectedData: CalendarSharedData,
+    selectionType: CalendarSelectionType
+  ): void;
+}>();
 
 // reactive data
 const base = ref<HTMLElement | null>(null);
@@ -161,9 +180,11 @@ let monthA = ref<calendarTools.WeekConfig[]>([]); // 当前显示月上一月
 let monthB = ref<calendarTools.WeekConfig[]>([]); // 当前显示月下一月
 
 // 选择的日期
-let selectedDateInfos = ref<string[]>([]);
-let rangeStart = ref<string | null>("");
-let rangeEnd = ref<string | null>("");
+// let selectedDateInfos = ref<string[]>([]);
+// let rangeStart = ref<string | null>("");
+// let rangeEnd = ref<string | null>("");
+// prop传入的初始值
+const priviteSelectionData = ref(props.initData);
 
 const dataArr = computed(() => [monthA.value, month0.value, monthB.value]);
 const showWeekIdx = computed(() => {
@@ -213,30 +234,42 @@ function handleDayClick(
   if (day.isGray) {
     return;
   }
+  let { selectedDateInfos, rangeStart, rangeEnd } = priviteSelectionData.value;
 
   if (props.selectionType == CalendarSelectionType.single) {
-    selectedDateInfos.value.length = 0;
-    selectedDateInfos.value.push(day.dateInfo);
+    // 单选
+    if (selectedDateInfos) {
+      selectedDateInfos.length = 0;
+    }
+    selectedDateInfos?.push(day.dateInfo);
+    emit("didSelectedDate", unref(priviteSelectionData), props.selectionType);
   } else if (props.selectionType == CalendarSelectionType.multiple) {
-    if (!selectedDateInfos.value.includes(day.dateInfo)) {
-      selectedDateInfos.value.push(day.dateInfo);
+    // 多选
+    if (!selectedDateInfos?.includes(day.dateInfo)) {
+      selectedDateInfos?.push(day.dateInfo);
+      emit("didSelectedDate", unref(priviteSelectionData), props.selectionType);
     }
   } else if (props.selectionType == CalendarSelectionType.range) {
-    if (rangeStart.value && rangeEnd.value) {
+    if (rangeStart && rangeEnd) {
       // 两个都选了  重新选择开始的
-      rangeEnd.value = null;
-      rangeStart.value = day.dateInfo;
+      priviteSelectionData.value.rangeEnd = undefined;
+      priviteSelectionData.value.rangeStart = day.dateInfo;
     } else {
-      if (rangeStart.value) {
-        if (day.orign.isBefore(dayjs(rangeStart.value), "day")) {
+      if (rangeStart) {
+        if (day.orign.isBefore(dayjs(rangeStart), "day")) {
           // 第二次选的 是否小于 第一次的
-          rangeEnd.value = rangeStart.value;
-          rangeStart.value = day.dateInfo;
+          priviteSelectionData.value.rangeEnd = rangeStart;
+          priviteSelectionData.value.rangeStart = day.dateInfo;
         } else {
-          rangeEnd.value = day.dateInfo;
+          priviteSelectionData.value.rangeEnd = day.dateInfo;
         }
+        emit(
+          "didSelectedDate",
+          unref(priviteSelectionData),
+          props.selectionType
+        );
       } else {
-        rangeStart.value = day.dateInfo;
+        priviteSelectionData.value.rangeStart = day.dateInfo;
       }
     }
   } else if (props.selectionType == CalendarSelectionType.week) {
@@ -248,12 +281,15 @@ function handleDayClick(
 
 function handleWeekIdxClick(week: calendarTools.WeekConfig, reload = true) {
   if (props.selectionType == CalendarSelectionType.week) {
-    rangeStart.value = null;
-    rangeEnd.value = null;
+    priviteSelectionData.value.rangeStart = undefined;
+    priviteSelectionData.value.rangeEnd = undefined;
     let start = week.days[0];
     let end = week.days[week.days.length - 1];
-    rangeStart.value = start.dateInfo;
-    rangeEnd.value = end.dateInfo;
+
+    priviteSelectionData.value.rangeStart = start.dateInfo;
+    priviteSelectionData.value.rangeEnd = end.dateInfo;
+
+    emit("didSelectedDate", unref(priviteSelectionData), props.selectionType);
   }
   if (reload) {
     checkSelectedDate(month0.value);
@@ -323,6 +359,8 @@ const reloadCalendarData = () => {
 };
 
 const checkSelectedDate = (monthArr: calendarTools.WeekConfig[]) => {
+  let { rangeStart, rangeEnd, selectedDateInfos } = priviteSelectionData.value;
+
   if (
     [CalendarSelectionType.range, CalendarSelectionType.week].includes(
       props.selectionType
@@ -338,8 +376,8 @@ const checkSelectedDate = (monthArr: calendarTools.WeekConfig[]) => {
       }
     }
 
-    if (rangeStart.value) {
-      let start = dayjs(rangeStart.value);
+    if (rangeStart) {
+      let start = dayjs(rangeStart);
       for (const week of monthArr) {
         for (const day of week.days) {
           if (day.orign.isSame(start, "day")) {
@@ -350,8 +388,8 @@ const checkSelectedDate = (monthArr: calendarTools.WeekConfig[]) => {
       }
     }
 
-    if (rangeEnd.value) {
-      let end = dayjs(rangeEnd.value);
+    if (rangeEnd) {
+      let end = dayjs(rangeEnd);
       for (const week of monthArr) {
         for (const day of week.days) {
           if (day.orign.isSame(end, "day")) {
@@ -361,12 +399,10 @@ const checkSelectedDate = (monthArr: calendarTools.WeekConfig[]) => {
       }
     }
 
-    if (rangeStart.value && rangeEnd.value) {
+    if (rangeStart && rangeEnd) {
       for (const week of monthArr) {
         for (const day of week.days) {
-          if (
-            day.orign.isBetween(rangeStart.value, rangeEnd.value, "day", "[]")
-          ) {
+          if (day.orign.isBetween(rangeStart, rangeEnd, "day", "[]")) {
             day.isSelected = true;
             if (
               props.selectionType == CalendarSelectionType.week &&
@@ -383,9 +419,11 @@ const checkSelectedDate = (monthArr: calendarTools.WeekConfig[]) => {
     for (const week of monthArr) {
       for (const day of week.days) {
         day.isSelected = false;
-        for (const _sDay of selectedDateInfos.value) {
-          if (day.orign.isSame(dayjs(_sDay), "day")) {
-            day.isSelected = true;
+        if (selectedDateInfos) {
+          for (const _sDay of selectedDateInfos) {
+            if (day.orign.isSame(dayjs(_sDay), "day")) {
+              day.isSelected = true;
+            }
           }
         }
       }
