@@ -1,5 +1,5 @@
 import { createRouter, createWebHashHistory } from "vue-router";
-import Calendar from "@/views/Calendar.vue";
+import HomePage from "@/views/HomePage.vue";
 
 const router = createRouter({
   history: createWebHashHistory(import.meta.env.BASE_URL),
@@ -7,7 +7,7 @@ const router = createRouter({
     {
       path: "/",
       name: "home",
-      component: Calendar,
+      component: HomePage,
     },
   ],
 });
