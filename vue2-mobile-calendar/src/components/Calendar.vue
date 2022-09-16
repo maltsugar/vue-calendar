@@ -57,7 +57,7 @@
           class="c-grid month-base"
           :style="{
             transform: `translate3d(${
-              (midx - 1 + translateX + (isTouching ? touch.x : 0)) * 100
+              (midx - 1 + translateX + (isTouching ? touch.ratioX : 0)) * 100
             }%, 0, 0)`,
             transitionDuration: isTouching ? '0s' : '.3s',
           }"
@@ -112,6 +112,12 @@ dayjs.extend(isBetween);
 
 let touchStartX;
 let touchStartY;
+const getInitialTouchPoint = () => ({
+  offsetX: 0,
+  offsetY: 0,
+  ratioX: 0,
+  ratioY: 0,
+});
 
 export default {
   name: "Calendar",
@@ -146,10 +152,7 @@ export default {
   data() {
     return {
       translateX: 0,
-      touch: {
-        x: 0,
-        y: 0,
-      },
+      touch: getInitialTouchPoint(),
       isTouching: false,
 
       curDate: dayjs(),
@@ -332,36 +335,51 @@ export default {
       let _etouch = event.touches[0];
       touchStartX = _etouch.clientX;
       touchStartY = _etouch.clientY;
-      this.touch = {
-        x: 0,
-        y: 0,
-      };
+      this.touch = getInitialTouchPoint();
       this.isTouching = true;
     },
     touchmove(event) {
       let _etouch = event.touches[0];
-      this.touch = {
-        x: (_etouch.clientX - touchStartX) / this.$refs.base.offsetWidth,
-        y: (_etouch.clientY - touchStartY) / this.$refs.base.offsetHeight,
-      };
+      this.touch.offsetX = _etouch.clientX - touchStartX;
+      this.touch.offsetY = _etouch.clientY - touchStartY;
+      this.touch.ratioX =
+        this.touch.offsetX / this.$refs?.base?.offsetWidth ?? 1;
+      this.touch.ratioY =
+        this.touch.offsetY / this.$refs?.base?.offsetHeight ?? 1;
+
       // console.log("x", _etouch.clientX)
       // console.log(JSON.stringify(this.touch))
     },
     touchend(event) {
       this.isTouching = false;
-      if (Math.abs(this.touch.x) > 0.4) {
-        if (this.touch.x > 0) {
-          // console.log("右滑")
-          this.change(-1);
-        } else if (this.touch.x < 0) {
-          // console.log("左滑")
-          this.change(1);
+      const useRatio = false; // 使用百分比
+      if (useRatio) {
+        // 使用滑动百分比 判断是否切换
+
+        if (Math.abs(this.touch.x) > 0.1) {
+          if (this.touch.x > 0) {
+            // console.log("右滑")
+            this.change(-1);
+          } else if (this.touch.x < 0) {
+            // console.log("左滑")
+            this.change(1);
+          }
+        } else {
+          this.touch = getInitialTouchPoint();
         }
       } else {
-        this.touch = {
-          x: 0,
-          y: 0,
-        };
+        // 使用固定位移判断 是否切换
+        if (Math.abs(this.touch.offsetX) > 40) {
+          if (this.touch.offsetX > 0) {
+            // console.log("右滑")
+            this.change(-1);
+          } else if (this.touch.offsetX < 0) {
+            // console.log("左滑")
+            this.change(1);
+          }
+        } else {
+          this.touch = getInitialTouchPoint();
+        }
       }
     },
 

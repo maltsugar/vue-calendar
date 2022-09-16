@@ -57,7 +57,7 @@
           class="c-grid month-base"
           :style="{
             transform: `translate3d(${
-              (midx - 1 + translateX + (isTouching ? touch.x : 0)) * 100
+              (midx - 1 + translateX + (isTouching ? touch.ratioX : 0)) * 100
             }%, 0, 0)`,
             transitionDuration: isTouching ? '0s' : '.3s',
           }"
@@ -145,6 +145,12 @@ interface Props {
 
 let touchStartX: number;
 let touchStartY: number;
+const getInitialTouchPoint = () => ({
+  offsetX: 0,
+  offsetY: 0,
+  ratioX: 0,
+  ratioY: 0,
+});
 
 const props = withDefaults(defineProps<Props>(), {
   weekStartDay: 1,
@@ -169,10 +175,7 @@ const emit = defineEmits<{
 // reactive data
 const base = ref<HTMLElement | null>(null);
 const translateX = ref(0);
-const touch = ref({
-  x: 0,
-  y: 0,
-});
+const touch = ref(getInitialTouchPoint());
 const isTouching = ref(false);
 
 let curDate = ref(dayjs());
@@ -331,33 +334,51 @@ const touchstart = (event: TouchEvent) => {
   let _etouch = event.touches[0];
   touchStartX = _etouch.clientX;
   touchStartY = _etouch.clientY;
-  touch.value = { x: 0, y: 0 };
+  touch.value = getInitialTouchPoint();
   isTouching.value = true;
 };
 const touchmove = (event: TouchEvent) => {
   let _etouch = event.touches[0];
-  touch.value.x =
-    (_etouch.clientX - touchStartX) / (base.value?.offsetWidth ?? 1);
-  touch.value.y =
-    (_etouch.clientY - touchStartY) / (base.value?.offsetHeight ?? 1);
+
+  touch.value.offsetX = _etouch.clientX - touchStartX;
+  touch.value.offsetY = _etouch.clientY - touchStartY;
+
+  touch.value.ratioX = touch.value.offsetX / (base.value?.offsetWidth ?? 1);
+  touch.value.ratioY = touch.value.offsetY / (base.value?.offsetHeight ?? 1);
   // console.log("x", _etouch.clientX)
-  // console.log(JSON.stringify(touch.value))
+  // console.log(JSON.stringify(touch.value));
 };
 const touchend = () => {
   isTouching.value = false;
-  if (Math.abs(touch.value.x) > 0.4) {
-    if (touch.value.x > 0) {
-      // console.log("右滑")
-      change(-1);
-    } else if (touch.value.x < 0) {
-      // console.log("左滑")
-      change(1);
+
+  const useRatio = false; // 使用百分比
+
+  if (useRatio) {
+    // 使用滑动百分比 判断是否切换
+    if (Math.abs(touch.value.ratioX) > 0.1) {
+      if (touch.value.ratioX > 0) {
+        // console.log("右滑")
+        change(-1);
+      } else if (touch.value.ratioX < 0) {
+        // console.log("左滑")
+        change(1);
+      }
+    } else {
+      touch.value = getInitialTouchPoint();
     }
   } else {
-    touch.value = {
-      x: 0,
-      y: 0,
-    };
+    // 使用固定位移判断 是否切换
+    if (Math.abs(touch.value.offsetX) > 40) {
+      if (touch.value.offsetX > 0) {
+        // console.log("右滑")
+        change(-1);
+      } else if (touch.value.offsetX < 0) {
+        // console.log("左滑")
+        change(1);
+      }
+    } else {
+      touch.value = getInitialTouchPoint();
+    }
   }
 };
 
