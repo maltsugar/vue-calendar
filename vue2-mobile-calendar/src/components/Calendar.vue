@@ -5,12 +5,14 @@
         <img
           class="q-btn"
           src="@/assets/img/cal_db_leftarrow.png"
+          :class="{ disabled: quickChangeBtnStatus.dbLeft == false }"
           alt=""
           @click="handleChangBtnAction(-2)"
         />
         <img
           class="q-btn"
           src="@/assets/img/cal_leftarrow.png"
+          :class="{ disabled: quickChangeBtnStatus.left == false }"
           alt=""
           @click="handleChangBtnAction(-1)"
         />
@@ -20,12 +22,14 @@
         <img
           class="q-btn"
           src="@/assets/img/cal_rightarrow.png"
+          :class="{ disabled: quickChangeBtnStatus.right == false }"
           alt=""
           @click="handleChangBtnAction(1)"
         />
         <img
           class="q-btn"
           src="@/assets/img/cal_db_rightarrow.png"
+          :class="{ disabled: quickChangeBtnStatus.dbRight == false }"
           alt=""
           @click="handleChangBtnAction(2)"
         />
@@ -110,6 +114,11 @@ import dayjs from "dayjs";
 const isBetween = require("dayjs/plugin/isBetween");
 dayjs.extend(isBetween);
 
+const isSameOrBefore = require("dayjs/plugin/isSameOrBefore");
+dayjs.extend(isSameOrBefore);
+const isSameOrAfter = require("dayjs/plugin/isSameOrAfter");
+dayjs.extend(isSameOrAfter);
+
 let touchStartX;
 let touchStartY;
 const getInitialTouchPoint = () => ({
@@ -130,12 +139,15 @@ export default {
       type: Array,
       default: () => ["一", "二", "三", "四", "五", "六", "日"],
     },
+    // 最小和最大日期
+    minDate: { type: String, default: "2022-01-01" },
+    maxDate: { type: String, default: "2023-12-31" },
 
     // 日期选择类型， single单选  multiple多选  range范围  week整周
     selectionType: { type: String, default: "single" },
 
     /**
-     * 选择的日期
+     * 默认的日期
      */
     selectedDateInfo: { type: String, default: "" }, // single
     selectedDateInfoArr: { type: Array, default: () => [] }, // multiple
@@ -182,6 +194,29 @@ export default {
 
     dataArr() {
       return [this.monthA, this.month0, this.monthB];
+    },
+
+    quickChangeBtnStatus() {
+      let obj = {
+        dbLeft: true,
+        left: true,
+        right: true,
+        dbRight: true,
+      };
+      if (this.curDate.add(-1, "year").isBefore(this.minDate, "month")) {
+        obj.dbLeft = false;
+      }
+      if (this.curDate.add(-1, "month").isBefore(this.minDate, "month")) {
+        obj.left = false;
+      }
+
+      if (this.curDate.add(1, "year").isAfter(this.maxDate, "month")) {
+        obj.dbRight = false;
+      }
+      if (this.curDate.add(1, "month").isAfter(this.maxDate, "month")) {
+        obj.right = false;
+      }
+      return obj;
     },
 
     // prop传入的初始值
@@ -301,16 +336,37 @@ export default {
     handleChangBtnAction(val) {
       if (Math.abs(val) == 1) {
         // 切月份
+
+        if (val < 0) {
+          // 向过去切 =  右滑
+          if (!this.quickChangeBtnStatus.left) {
+            return;
+          }
+        } else {
+          // 向未来切 =  左滑
+          if (!this.quickChangeBtnStatus.right) {
+            return;
+          }
+        }
+
         this.change(val);
       }
 
       if (Math.abs(val) == 2) {
         // 切年份
+
         if (val < 0) {
           // 向过去切 =  右滑
+          if (!this.quickChangeBtnStatus.dbLeft) {
+            return;
+          }
+
           this.curDate = this.curDate.add(-1, "year");
         } else {
           // 向未来切 =  左滑
+          if (!this.quickChangeBtnStatus.dbRight) {
+            return;
+          }
           this.curDate = this.curDate.add(1, "year");
         }
         this.reloadCalendarData();
@@ -408,6 +464,23 @@ export default {
       let _etouch = event.touches[0];
       this.touch.offsetX = _etouch.clientX - touchStartX;
       this.touch.offsetY = _etouch.clientY - touchStartY;
+
+      // console.log("offsetX", this.touch.offsetX);
+      if (!this.quickChangeBtnStatus.left) {
+        // 当前月 <= 最小值 , 禁用 右滑 (左边切月按钮不可用时)
+        if (this.touch.offsetX > 0) {
+          this.touch.offsetX = 0;
+          return;
+        }
+      }
+      if (!this.quickChangeBtnStatus.right) {
+        // 当前月 >= 最大值 , 禁用 左滑 (右边切月按钮不可用时)
+        if (this.touch.offsetX < 0) {
+          this.touch.offsetX = 0;
+          return;
+        }
+      }
+
       this.touch.ratioX =
         this.touch.offsetX / this.$refs?.base?.offsetWidth ?? 1;
       this.touch.ratioY =
@@ -568,6 +641,12 @@ export default {
 
       &:first-of-type {
         margin-right: 16px;
+      }
+
+      &.disabled {
+        opacity: 0.5;
+        -webkit-filter: grayscale(100%);
+        filter: grayscale(100%);
       }
     }
   }

@@ -5,12 +5,14 @@
         <img
           class="q-btn"
           src="@/assets/img/cal_db_leftarrow.png"
+          :class="{ disabled: quickChangeBtnStatus.dbLeft == false }"
           alt=""
           @click="handleChangBtnAction(-2)"
         />
         <img
           class="q-btn"
           src="@/assets/img/cal_leftarrow.png"
+          :class="{ disabled: quickChangeBtnStatus.left == false }"
           alt=""
           @click="handleChangBtnAction(-1)"
         />
@@ -20,12 +22,14 @@
         <img
           class="q-btn"
           src="@/assets/img/cal_rightarrow.png"
+          :class="{ disabled: quickChangeBtnStatus.right == false }"
           alt=""
           @click="handleChangBtnAction(1)"
         />
         <img
           class="q-btn"
           src="@/assets/img/cal_db_rightarrow.png"
+          :class="{ disabled: quickChangeBtnStatus.dbRight == false }"
           alt=""
           @click="handleChangBtnAction(2)"
         />
@@ -111,6 +115,12 @@
 import dayjs from "dayjs";
 import isBetween from "dayjs/plugin/isBetween";
 dayjs.extend(isBetween);
+
+import isSameOrBefore from "dayjs/plugin/isSameOrBefore";
+dayjs.extend(isSameOrBefore);
+import isSameOrAfter from "dayjs/plugin/isSameOrAfter";
+dayjs.extend(isSameOrAfter);
+
 import * as calendarTools from "@/helper/calendarTools";
 
 export enum CalendarSelectionType {
@@ -137,10 +147,14 @@ interface Props {
   weekStartDay?: number; // 一周开始星期， 0为周日
   weekIndexTitle?: string; // 周序号标题，不写 则不显示
   weekTitles?: Array<string>;
-  selectionType?: CalendarSelectionType; // 日期选择类型
 
+  // 最小和最大日期
+  minDate?: string;
+  maxDate?: string;
+
+  selectionType?: CalendarSelectionType; // 日期选择类型
   /**
-   * 选择的日期 格式 YYYY-MM-DD
+   * 默认的日期 格式 YYYY-MM-DD
    */
   selectedDateInfo?: string; // single
   selectedDateInfoArr?: Array<string>; // multiple
@@ -163,8 +177,10 @@ const props = withDefaults(defineProps<Props>(), {
   weekStartDay: 1,
   weekIndexTitle: "周",
   weekTitles: () => ["一", "二", "三", "四", "五", "六", "日"],
-  selectionType: CalendarSelectionType.single,
+  minDate: "2022-01-01",
+  maxDate: "2023-12-31",
 
+  selectionType: CalendarSelectionType.single,
   selectedDateInfo: "", // single
   selectedDateInfoArr: () => [], // multiple
   rangeStart: "", // range
@@ -220,19 +236,30 @@ const curTitle = computed(() => {
   return date.format(fmt);
 });
 
-// prop传入的初始值
-// let priviteSelectionData = computed({
-//   get() {
-//     if (!m_priviteSelectionData.value) {
-//       m_priviteSelectionData.value = deepClone(props.initData);
-//     }
-//     return m_priviteSelectionData.value;
-//   },
-//   set(newVal) {
-//     m_priviteSelectionData.value = newVal;
-//   },
-// });
+const quickChangeBtnStatus = computed(() => {
+  let obj = {
+    dbLeft: true,
+    left: true,
+    right: true,
+    dbRight: true,
+  };
+  if (curDate.value.add(-1, "year").isBefore(props.minDate, "month")) {
+    obj.dbLeft = false;
+  }
+  if (curDate.value.add(-1, "month").isBefore(props.minDate, "month")) {
+    obj.left = false;
+  }
 
+  if (curDate.value.add(1, "year").isAfter(props.maxDate, "month")) {
+    obj.dbRight = false;
+  }
+  if (curDate.value.add(1, "month").isAfter(props.maxDate, "month")) {
+    obj.right = false;
+  }
+  return obj;
+});
+
+// prop传入的初始值
 let m_selectedDateInfo = computed({
   get() {
     if (t_selectedDateInfo.value == undefined) {
@@ -341,15 +368,32 @@ watch(m_selectionType, () => {
 function handleChangBtnAction(val: number) {
   if (Math.abs(val) == 1) {
     // 切月份
+    if (val < 0) {
+      // 向过去切 =  右滑
+      if (!quickChangeBtnStatus.value.left) {
+        return;
+      }
+    } else {
+      // 向未来切 =  左滑
+      if (!quickChangeBtnStatus.value.right) {
+        return;
+      }
+    }
     change(val);
   }
   if (Math.abs(val) == 2) {
     // 切年份
     if (val < 0) {
       // 向过去切 =  右滑
+      if (!quickChangeBtnStatus.value.dbLeft) {
+        return;
+      }
       curDate.value = curDate.value.add(-1, "year");
     } else {
       // 向未来切 =  左滑
+      if (!quickChangeBtnStatus.value.dbRight) {
+        return;
+      }
       curDate.value = curDate.value.add(1, "year");
     }
     reloadCalendarData();
@@ -454,6 +498,22 @@ const touchmove = (event: TouchEvent) => {
 
   touch.value.offsetX = _etouch.clientX - touchStartX;
   touch.value.offsetY = _etouch.clientY - touchStartY;
+
+  // console.log("offsetX", touch.value.offsetX);
+  if (!quickChangeBtnStatus.value.left) {
+    // 当前月 <= 最小值 , 禁用 右滑 (左边切月按钮不可用时)
+    if (touch.value.offsetX > 0) {
+      touch.value.offsetX = 0;
+      return;
+    }
+  }
+  if (!quickChangeBtnStatus.value.right) {
+    // 当前月 >= 最大值 , 禁用 左滑 (右边切月按钮不可用时)
+    if (touch.value.offsetX < 0) {
+      touch.value.offsetX = 0;
+      return;
+    }
+  }
 
   touch.value.ratioX = touch.value.offsetX / (base.value?.offsetWidth ?? 1);
   touch.value.ratioY = touch.value.offsetY / (base.value?.offsetHeight ?? 1);
@@ -631,6 +691,11 @@ onMounted(() => {
 
       &:first-of-type {
         margin-right: 16px;
+      }
+      &.disabled {
+        opacity: 0.5;
+        -webkit-filter: grayscale(100%);
+        filter: grayscale(100%);
       }
     }
   }
