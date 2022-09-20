@@ -36,7 +36,12 @@
     :weekStartDay="weekStartDay"
     :weekTitles="weekTitles"
     :selectionType="dateSelectType"
-    :initData="calendarData"
+    :selectedDateInfo="selectedDateInfo"
+    :selectedDateInfoArr="selectedDateInfoArr"
+    :rangeStart="rangeStart"
+    :rangeEnd="rangeEnd"
+    :weekRangeStart="weekRangeStart"
+    :weekRangeEnd="weekRangeEnd"
     @didSelectedDate="canlendarHandle"
   />
 </template>
@@ -44,7 +49,7 @@
 <script setup lang="ts">
 import { ref, computed } from "vue";
 import Calendar, { CalendarSelectionType } from "@/components/Calendar.vue";
-import type { CalendarSharedData } from "@/components/Calendar.vue";
+import type { CalendarInfoData } from "@/components/Calendar.vue";
 
 // demo
 const typeBtns = ref(["单选", "多选", "范围", "按周"]);
@@ -71,12 +76,14 @@ const weekTitlesConfig = ref([
 ]);
 const showWeekOrder = ref(true);
 
-// calendar config
-const calendarData = ref({
-  selectedDateInfos: [],
-  rangeStart: "",
-  rangeEnd: "",
-});
+// calendar default data
+const selectedDateInfo = ref("2022-09-15");
+const selectedDateInfoArr = ref(["2022-09-13", "2022-09-02", "2022-09-22"]);
+const rangeStart = ref("2022-09-05");
+const rangeEnd = ref("2022-09-22");
+const weekRangeStart = ref("2022-09-11");
+const weekRangeEnd = ref("2022-09-17");
+
 const dateSelectType = ref(CalendarSelectionType.single);
 const weekStartDay = ref(0);
 const weekTitles = ref(weekTitlesConfig.value[0].content);
@@ -89,7 +96,7 @@ const weekIndexTitle = computed(() => {
 });
 
 const canlendarHandle = (
-  clddata: CalendarSharedData,
+  clddata: CalendarInfoData,
   type: CalendarSelectionType
 ) => {
   console.log("clddata", clddata);

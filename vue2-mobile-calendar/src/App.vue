@@ -86,8 +86,9 @@ export default {
       weekTitlesConfig: wtitlesConfig(),
       weekTilesConfigIdx: 0,
 
+      // calendar default data
       selectedDateInfo: "2022-09-15",
-      selectedDateInfoArr: ["2022-09-13"],
+      selectedDateInfoArr: ["2022-09-13", "2022-09-02", "2022-09-22"],
       rangeStart: "2022-09-05",
       rangeEnd: "2022-09-22",
       weekRangeStart: "2022-09-11",

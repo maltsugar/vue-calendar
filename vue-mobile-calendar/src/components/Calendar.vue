@@ -112,7 +112,6 @@ import dayjs from "dayjs";
 import isBetween from "dayjs/plugin/isBetween";
 dayjs.extend(isBetween);
 import * as calendarTools from "@/helper/calendarTools";
-import { deepClone } from "@/helper/helper";
 
 export enum CalendarSelectionType {
   single = 0,
@@ -120,16 +119,19 @@ export enum CalendarSelectionType {
   range,
   week,
 }
+
+export interface CalendarInfoData {
+  selectedDateInfo?: string; // single
+  selectedDateInfoArr?: string[]; // multiple
+  rangeStart?: string; // range
+  rangeEnd?: string; // range
+  weekRangeStart?: string; // week
+  weekRangeEnd?: string; // week
+}
 </script>
 
 <script setup lang="ts">
 import { ref, unref, computed, onMounted, watch } from "vue";
-
-export interface CalendarSharedData {
-  selectedDateInfos?: string[];
-  rangeStart?: string;
-  rangeEnd?: string;
-}
 
 interface Props {
   weekStartDay?: number; // 一周开始星期， 0为周日
@@ -138,9 +140,14 @@ interface Props {
   selectionType?: CalendarSelectionType; // 日期选择类型
 
   /**
-   * 选择的日期， single/multiple使用selectedDateInfos， range/week使用rangeStart、rangeEnd
+   * 选择的日期 格式 YYYY-MM-DD
    */
-  initData?: CalendarSharedData;
+  selectedDateInfo?: string; // single
+  selectedDateInfoArr?: Array<string>; // multiple
+  rangeStart?: string; // range
+  rangeEnd?: string; // range
+  weekRangeStart?: string; // week
+  weekRangeEnd?: string; // week
 }
 
 let touchStartX: number;
@@ -157,17 +164,19 @@ const props = withDefaults(defineProps<Props>(), {
   weekIndexTitle: "周",
   weekTitles: () => ["一", "二", "三", "四", "五", "六", "日"],
   selectionType: CalendarSelectionType.single,
-  initData: () => ({
-    selectedDateInfos: [],
-    rangeStart: "",
-    rangeEnd: "",
-  }),
+
+  selectedDateInfo: "", // single
+  selectedDateInfoArr: () => [], // multiple
+  rangeStart: "", // range
+  rangeEnd: "", // range
+  weekRangeStart: "", // week
+  weekRangeEnd: "", // week
 });
 
 const emit = defineEmits<{
   (
     e: "didSelectedDate",
-    selectedData: CalendarSharedData,
+    selectedData: CalendarInfoData,
     selectionType: CalendarSelectionType
   ): void;
 }>();
@@ -183,7 +192,12 @@ let month0 = ref<calendarTools.WeekConfig[]>([]); // 当前显示月
 let monthA = ref<calendarTools.WeekConfig[]>([]); // 当前显示月上一月
 let monthB = ref<calendarTools.WeekConfig[]>([]); // 当前显示月下一月
 
-let m_priviteSelectionData = ref<CalendarSharedData | null>(null);
+let t_selectedDateInfo = ref<string | undefined>(undefined);
+let t_selectedDateInfoArr = ref<string[] | undefined>(undefined);
+let t_rangeStart = ref<string | undefined>(undefined);
+let t_rangeEnd = ref<string | undefined>(undefined);
+let t_weekRangeStart = ref<string | undefined>(undefined);
+let t_weekRangeEnd = ref<string | undefined>(undefined);
 
 const dataArr = computed(() => [monthA.value, month0.value, monthB.value]);
 const showWeekIdx = computed(() => {
@@ -207,18 +221,105 @@ const curTitle = computed(() => {
 });
 
 // prop传入的初始值
-let priviteSelectionData = computed({
+// let priviteSelectionData = computed({
+//   get() {
+//     if (!m_priviteSelectionData.value) {
+//       m_priviteSelectionData.value = deepClone(props.initData);
+//     }
+//     return m_priviteSelectionData.value;
+//   },
+//   set(newVal) {
+//     m_priviteSelectionData.value = newVal;
+//   },
+// });
+
+let m_selectedDateInfo = computed({
   get() {
-    if (!m_priviteSelectionData.value) {
-      m_priviteSelectionData.value = deepClone(props.initData);
+    if (t_selectedDateInfo.value == undefined) {
+      t_selectedDateInfo.value = props.selectedDateInfo;
     }
-    return m_priviteSelectionData.value;
+    return t_selectedDateInfo.value;
   },
   set(newVal) {
-    m_priviteSelectionData.value = newVal;
+    t_selectedDateInfo.value = newVal;
   },
 });
-watch(priviteSelectionData, () => {
+watch(m_selectedDateInfo, () => {
+  reloadCalendarData();
+});
+
+let m_selectedDateInfoArr = computed({
+  get() {
+    if (t_selectedDateInfoArr.value == undefined) {
+      t_selectedDateInfoArr.value = props.selectedDateInfoArr;
+    }
+    return t_selectedDateInfoArr.value;
+  },
+  set(newVal) {
+    t_selectedDateInfoArr.value = newVal;
+  },
+});
+watch(m_selectedDateInfoArr, () => {
+  reloadCalendarData();
+});
+
+let m_rangeStart = computed<string | undefined>({
+  get() {
+    if (t_rangeStart.value == undefined) {
+      t_rangeStart.value = props.rangeStart;
+    }
+    return t_rangeStart.value;
+  },
+  set(newVal) {
+    t_rangeStart.value = newVal;
+  },
+});
+watch(m_rangeStart, () => {
+  reloadCalendarData();
+});
+
+let m_rangeEnd = computed<string | undefined>({
+  get() {
+    if (t_rangeEnd.value == undefined) {
+      t_rangeEnd.value = props.rangeEnd;
+    }
+    return t_rangeEnd.value;
+  },
+  set(newVal) {
+    t_rangeEnd.value = newVal;
+  },
+});
+watch(m_rangeEnd, () => {
+  reloadCalendarData();
+});
+
+let m_weekRangeStart = computed<string | undefined>({
+  get() {
+    if (t_weekRangeStart.value == undefined) {
+      t_weekRangeStart.value = props.weekRangeStart;
+    }
+    return t_weekRangeStart.value;
+  },
+  set(newVal) {
+    t_weekRangeStart.value = newVal;
+  },
+});
+watch(m_weekRangeStart, () => {
+  reloadCalendarData();
+});
+
+let m_weekRangeEnd = computed<string | undefined>({
+  get() {
+    if (t_weekRangeEnd.value == undefined) {
+      t_weekRangeEnd.value = props.weekRangeEnd;
+    }
+    return t_weekRangeEnd.value;
+  },
+  set(newVal) {
+    t_weekRangeEnd.value = newVal;
+  },
+});
+watch(m_weekRangeEnd, () => {
   reloadCalendarData();
 });
 
@@ -233,7 +334,6 @@ const m_selectionType = computed(() => {
   return props.selectionType;
 });
 watch(m_selectionType, () => {
-  priviteSelectionData.value = deepClone(props.initData);
   reloadCalendarData();
 });
 
@@ -264,46 +364,51 @@ function handleDayClick(
   if (day.isGray) {
     return;
   }
-  let { selectedDateInfos, rangeStart, rangeEnd } = priviteSelectionData.value;
 
   if (m_selectionType.value == CalendarSelectionType.single) {
     // 单选
-    if (selectedDateInfos) {
-      selectedDateInfos.length = 0;
-    }
-    selectedDateInfos?.push(day.dateInfo);
-    emit("didSelectedDate", unref(priviteSelectionData), m_selectionType.value);
+
+    m_selectedDateInfo.value = day.dateInfo;
+    emit(
+      "didSelectedDate",
+      { selectedDateInfo: unref(m_selectedDateInfo) },
+      m_selectionType.value
+    );
   } else if (m_selectionType.value == CalendarSelectionType.multiple) {
     // 多选
-    if (!selectedDateInfos?.includes(day.dateInfo)) {
-      selectedDateInfos?.push(day.dateInfo);
-      emit(
-        "didSelectedDate",
-        unref(priviteSelectionData),
-        m_selectionType.value
-      );
-    }
-  } else if (m_selectionType.value == CalendarSelectionType.range) {
-    if (rangeStart && rangeEnd) {
-      // 两个都选了  重新选择开始的
-      priviteSelectionData.value.rangeEnd = undefined;
-      priviteSelectionData.value.rangeStart = day.dateInfo;
+    let _idx = m_selectedDateInfoArr.value.indexOf(day.dateInfo);
+    if (_idx > -1) {
+      // 已经包含  取消选择
+      m_selectedDateInfoArr.value.splice(_idx, 1);
     } else {
-      if (rangeStart) {
-        if (day.orign.isBefore(dayjs(rangeStart), "day")) {
+      m_selectedDateInfoArr.value.push(day.dateInfo);
+    }
+    emit(
+      "didSelectedDate",
+      { selectedDateInfoArr: unref(m_selectedDateInfoArr) },
+      m_selectionType.value
+    );
+  } else if (m_selectionType.value == CalendarSelectionType.range) {
+    if (m_rangeStart.value && m_rangeEnd.value) {
+      // 两个都选了  重新选择开始的
+      m_rangeEnd.value = "";
+      m_rangeStart.value = day.dateInfo;
+    } else {
+      if (m_rangeStart.value) {
+        if (day.orign.isBefore(dayjs(m_rangeStart.value), "day")) {
           // 第二次选的 是否小于 第一次的
-          priviteSelectionData.value.rangeEnd = rangeStart;
-          priviteSelectionData.value.rangeStart = day.dateInfo;
+          m_rangeEnd.value = m_rangeStart.value;
+          m_rangeStart.value = day.dateInfo;
         } else {
-          priviteSelectionData.value.rangeEnd = day.dateInfo;
+          m_rangeEnd.value = day.dateInfo;
         }
         emit(
           "didSelectedDate",
-          unref(priviteSelectionData),
+          { rangeStart: unref(m_rangeStart), rangeEnd: unref(m_rangeEnd) },
           m_selectionType.value
         );
       } else {
-        priviteSelectionData.value.rangeStart = day.dateInfo;
+        m_rangeStart.value = day.dateInfo;
       }
     }
   } else if (m_selectionType.value == CalendarSelectionType.week) {
@@ -315,15 +420,22 @@ function handleDayClick(
 
 function handleWeekIdxClick(week: calendarTools.WeekConfig, reload = true) {
   if (m_selectionType.value == CalendarSelectionType.week) {
-    priviteSelectionData.value.rangeStart = undefined;
-    priviteSelectionData.value.rangeEnd = undefined;
+    m_weekRangeStart.value = undefined;
+    m_weekRangeEnd.value = undefined;
     let start = week.days[0];
     let end = week.days[week.days.length - 1];
 
-    priviteSelectionData.value.rangeStart = start.dateInfo;
-    priviteSelectionData.value.rangeEnd = end.dateInfo;
+    m_weekRangeStart.value = start.dateInfo;
+    m_weekRangeEnd.value = end.dateInfo;
 
-    emit("didSelectedDate", unref(priviteSelectionData), m_selectionType.value);
+    emit(
+      "didSelectedDate",
+      {
+        weekRangeStart: unref(m_weekRangeStart),
+        weekRangeEnd: unref(m_weekRangeEnd),
+      },
+      m_selectionType.value
+    );
   }
   if (reload) {
     checkSelectedDate(month0.value);
@@ -413,8 +525,6 @@ const reloadCalendarData = () => {
 };
 
 const checkSelectedDate = (monthArr: calendarTools.WeekConfig[]) => {
-  let { rangeStart, rangeEnd, selectedDateInfos } = priviteSelectionData.value;
-
   if (
     [CalendarSelectionType.range, CalendarSelectionType.week].includes(
       m_selectionType.value
@@ -430,8 +540,15 @@ const checkSelectedDate = (monthArr: calendarTools.WeekConfig[]) => {
       }
     }
 
-    if (rangeStart) {
-      let start = dayjs(rangeStart);
+    let _rstart = m_rangeStart.value;
+    let _rend = m_rangeEnd.value;
+    if (m_selectionType.value == CalendarSelectionType.week) {
+      _rstart = m_weekRangeStart.value;
+      _rend = m_weekRangeEnd.value;
+    }
+
+    if (_rstart) {
+      let start = dayjs(_rstart);
       for (const week of monthArr) {
         for (const day of week.days) {
           if (day.orign.isSame(start, "day")) {
@@ -442,8 +559,8 @@ const checkSelectedDate = (monthArr: calendarTools.WeekConfig[]) => {
       }
     }
 
-    if (rangeEnd) {
-      let end = dayjs(rangeEnd);
+    if (_rend) {
+      let end = dayjs(_rend);
       for (const week of monthArr) {
         for (const day of week.days) {
           if (day.orign.isSame(end, "day")) {
@@ -453,10 +570,10 @@ const checkSelectedDate = (monthArr: calendarTools.WeekConfig[]) => {
       }
     }
 
-    if (rangeStart && rangeEnd) {
+    if (_rstart && _rend) {
       for (const week of monthArr) {
         for (const day of week.days) {
-          if (day.orign.isBetween(rangeStart, rangeEnd, "day", "[]")) {
+          if (day.orign.isBetween(_rstart, _rend, "day", "[]")) {
             day.isSelected = true;
             if (
               m_selectionType.value == CalendarSelectionType.week &&
@@ -470,14 +587,17 @@ const checkSelectedDate = (monthArr: calendarTools.WeekConfig[]) => {
     }
   } else {
     // 单选或多选
+    let _tmp = m_selectedDateInfoArr.value;
+    if (m_selectionType.value == CalendarSelectionType.single) {
+      _tmp = [m_selectedDateInfo.value];
+    }
+
     for (const week of monthArr) {
       for (const day of week.days) {
         day.isSelected = false;
-        if (selectedDateInfos) {
-          for (const _sDay of selectedDateInfos) {
-            if (day.orign.isSame(dayjs(_sDay), "day")) {
-              day.isSelected = true;
-            }
+        for (const _sDay of _tmp) {
+          if (day.orign.isSame(dayjs(_sDay), "day")) {
+            day.isSelected = true;
           }
         }
       }

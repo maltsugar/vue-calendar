@@ -333,7 +333,11 @@ export default {
         );
       } else if (this.m_selectionType == "multiple") {
         // 多选
-        if (!this.m_selectedDateInfoArr.includes(day.dateInfo)) {
+        let _idx = this.m_selectedDateInfoArr.indexOf(day.dateInfo);
+        if (_idx > -1) {
+          // 已经包含  取消选择
+          this.m_selectedDateInfoArr.splice(_idx, 1);
+        } else {
           this.m_selectedDateInfoArr.push(day.dateInfo);
         }
         this.$emit(
@@ -369,12 +373,11 @@ export default {
       }
 
       this.checkSelectedDate(this.month0);
-      // this.$forceUpdate();
     },
     handleWeekIdxClick(week, reload = true) {
       if (this.m_selectionType == "week") {
-        this.m_weekRangeStart = null;
-        this.m_weekRangeEnd = null;
+        this.m_weekRangeStart = undefined;
+        this.m_weekRangeEnd = undefined;
         let start = week.days[0];
         let end = week.days[week.days.length - 1];
         this.m_weekRangeStart = start.dateInfo;
@@ -390,10 +393,7 @@ export default {
         );
       }
       if (reload) {
-        this.$nextTick(() => {
-          this.checkSelectedDate(this.month0);
-          this.$forceUpdate();
-        });
+        this.checkSelectedDate(this.month0);
       }
     },
 
