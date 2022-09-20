@@ -89,52 +89,25 @@ export function getFullMonthDaysInDate(date0, weekStartDay = 0) {
   return fullMonthWeeks;
 }
 
-// 浅复制，只做第一层复制
-export const shallowCopy = (src) => {
-  var dst = {};
-  for (var prop in src) {
-    if (src.hasOwnProperty(prop)) {
-      dst[prop] = src[prop];
-    }
-  }
-  if (Object.prototype.toString.call(src) == "[object Array]") {
-    dst = Object.values(dst);
-  }
-  return dst;
-};
-
 /**
- * 深拷贝
- * @param {*} obj 拷贝对象(object or array)
- * @param {*} cache 缓存数组
+ * 根据周开始日、diffN， 计算目标周的开始结束日期
+ * @param {*} diffN T+(diffN)周
+ * @param {*} weekStartDay 周开始星期，  0周日 1周一 2周二 ...
+ * @rettun 返回获取到的周 开始日，结束日
  */
-export const deepCopy = (obj, cache = []) => {
-  // typeof [] => 'object'
-  // typeof {} => 'object'
-  if (obj === null || typeof obj !== "object") {
-    return obj;
-  }
-  // 如果传入的对象与缓存的相等, 则递归结束, 这样防止循环
-  /**
-   * 类似下面这种
-   * var a = {b:1}
-   * a.c = a
-   * 资料: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Errors/Cyclic_object_value
-   */
-  const hit = cache.filter((c) => c.original === obj)[0];
-  if (hit) {
-    return hit.copy;
-  }
+export function getWeekRangeByDiff(diffN, weekStartDay, format = "YYYY-MM-DD") {
+  let diffDays = 7 * diffN;
 
-  const copy = Array.isArray(obj) ? [] : {};
-  // 将copy首先放入cache, 因为我们需要在递归deepCopy的时候引用它
-  cache.push({
-    original: obj,
-    copy,
-  });
-  Object.keys(obj).forEach((key) => {
-    copy[key] = deepCopy(obj[key], cache);
-  });
+  // 当前周几
+  let now = dayjs().startOf("day");
+  let curDay = now.day();
+  let dv = curDay - weekStartDay; // 当前周几 距离 周开始日 的差值
+  if (dv < 0) {
+    dv += 7;
+  }
+  diffDays += -1 * dv;
 
-  return copy;
-};
+  let date0 = now.add(diffDays, "day");
+  let date1 = date0.add(6, "day");
+  return { start: date0.format(format), end: date1.format(format) };
+}

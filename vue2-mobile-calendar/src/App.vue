@@ -37,7 +37,12 @@
       :weekStartDay="weekStartDay"
       :weekTitles="weekTitles"
       :selectionType="dateSelectType"
-      :initData="calendarData"
+      :selectedDateInfo="selectedDateInfo"
+      :selectedDateInfoArr="selectedDateInfoArr"
+      :rangeStart="rangeStart"
+      :rangeEnd="rangeEnd"
+      :weekRangeStart="weekRangeStart"
+      :weekRangeEnd="weekRangeEnd"
       @didSelectedDate="canlendarHandle"
     />
   </div>
@@ -71,7 +76,7 @@ export default {
   },
   data() {
     return {
-      //demo
+      // demo
       typeBtns: ["单选", "多选", "范围", "按周"],
       curTypeIdx: 0,
       showWeekOrder: true,
@@ -81,11 +86,12 @@ export default {
       weekTitlesConfig: wtitlesConfig(),
       weekTilesConfigIdx: 0,
 
-      calendarData: {
-        selectedDateInfos: [],
-        rangeStart: "",
-        rangeEnd: "",
-      },
+      selectedDateInfo: "2022-09-15",
+      selectedDateInfoArr: ["2022-09-13"],
+      rangeStart: "2022-09-05",
+      rangeEnd: "2022-09-22",
+      weekRangeStart: "2022-09-11",
+      weekRangeEnd: "2022-09-17",
     };
   },
 

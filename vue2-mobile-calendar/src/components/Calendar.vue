@@ -104,7 +104,7 @@
 </template>
 
 <script>
-import { getFullMonthDaysInDate, deepCopy } from "@/helper/calendarTools.js";
+import { getFullMonthDaysInDate } from "@/helper/calendarTools.js";
 
 import dayjs from "dayjs";
 const isBetween = require("dayjs/plugin/isBetween");
@@ -135,18 +135,14 @@ export default {
     selectionType: { type: String, default: "single" },
 
     /**
-     * 选择的日期， single/multiple使用selectedDateInfos， range/week使用rangeStart、rangeEnd
+     * 选择的日期
      */
-    initData: {
-      type: Object,
-      default: () => {
-        return {
-          selectedDateInfos: [],
-          rangeStart: "",
-          rangeEnd: "",
-        };
-      },
-    },
+    selectedDateInfo: { type: String, default: "" }, // single
+    selectedDateInfoArr: { type: Array, default: () => [] }, // multiple
+    rangeStart: { type: String, default: "" }, // range
+    rangeEnd: { type: String, default: "" }, // range
+    weekRangeStart: { type: String, default: "" }, // week
+    weekRangeEnd: { type: String, default: "" }, // week
   },
 
   data() {
@@ -160,7 +156,12 @@ export default {
       monthA: [], // 当前显示月上一月
       monthB: [], // 当前显示月下一月
 
-      m_priviteSelectionData: null,
+      t_selectedDateInfo: undefined,
+      t_selectedDateInfoArr: undefined,
+      t_rangeStart: undefined,
+      t_rangeEnd: undefined,
+      t_weekRangeStart: undefined,
+      t_weekRangeEnd: undefined,
     };
   },
   computed: {
@@ -184,17 +185,76 @@ export default {
     },
 
     // prop传入的初始值
-    priviteSelectionData: {
+    m_selectedDateInfo: {
       get() {
-        if (!this.m_priviteSelectionData) {
-          this.m_priviteSelectionData = deepCopy(this.initData);
+        if (this.t_selectedDateInfo == undefined) {
+          this.t_selectedDateInfo = this.selectedDateInfo;
         }
-        return this.m_priviteSelectionData;
+        return this.t_selectedDateInfo;
       },
       set(newVal) {
-        this.m_priviteSelectionData = newVal;
+        this.t_selectedDateInfo = newVal;
       },
     },
+
+    m_selectedDateInfoArr: {
+      get() {
+        if (this.t_selectedDateInfoArr == undefined) {
+          this.t_selectedDateInfoArr = this.selectedDateInfoArr;
+        }
+        return this.t_selectedDateInfoArr;
+      },
+      set(newVal) {
+        this.t_selectedDateInfoArr = newVal;
+      },
+    },
+    m_rangeStart: {
+      get() {
+        if (this.t_rangeStart == undefined) {
+          this.t_rangeStart = this.rangeStart;
+        }
+        return this.t_rangeStart;
+      },
+      set(newVal) {
+        this.t_rangeStart = newVal;
+      },
+    },
+    m_rangeEnd: {
+      get() {
+        if (this.t_rangeEnd == undefined) {
+          this.t_rangeEnd = this.rangeEnd;
+        }
+        return this.t_rangeEnd;
+      },
+      set(newVal) {
+        this.t_rangeEnd = newVal;
+      },
+    },
+
+    // 周
+    m_weekRangeStart: {
+      get() {
+        if (this.t_weekRangeStart == undefined) {
+          this.t_weekRangeStart = this.weekRangeStart;
+        }
+        return this.t_weekRangeStart;
+      },
+      set(newVal) {
+        this.t_weekRangeStart = newVal;
+      },
+    },
+    m_weekRangeEnd: {
+      get() {
+        if (this.t_weekRangeEnd == undefined) {
+          this.t_weekRangeEnd = this.weekRangeEnd;
+        }
+        return this.t_weekRangeEnd;
+      },
+      set(newVal) {
+        this.t_weekRangeEnd = newVal;
+      },
+    },
+
     m_weekStartDay() {
       return this.weekStartDay;
     },
@@ -204,14 +264,30 @@ export default {
   },
 
   watch: {
-    priviteSelectionData() {
+    m_selectedDateInfo() {
       this.reloadCalendarData();
     },
+    m_selectedDateInfoArr() {
+      this.reloadCalendarData();
+    },
+    m_rangeStart() {
+      this.reloadCalendarData();
+    },
+    m_rangeEnd() {
+      this.reloadCalendarData();
+    },
+
+    m_weekRangeStart() {
+      this.reloadCalendarData();
+    },
+    m_weekRangeEnd() {
+      this.reloadCalendarData();
+    },
+
     m_weekStartDay() {
       this.reloadCalendarData();
     },
     m_selectionType() {
-      this.priviteSelectionData = deepCopy(this.initData);
       this.reloadCalendarData();
     },
   },
@@ -248,78 +324,68 @@ export default {
 
       if (this.m_selectionType == "single") {
         // 单选
-        this.priviteSelectionData.selectedDateInfos = [];
-        this.priviteSelectionData.selectedDateInfos.push(day.dateInfo);
+        this.m_selectedDateInfo = day.dateInfo;
+
         this.$emit(
           "didSelectedDate",
-          this.priviteSelectionData,
+          { selectedDateInfo: this.m_selectedDateInfo },
           this.m_selectionType
         );
       } else if (this.m_selectionType == "multiple") {
         // 多选
-        if (
-          !this.priviteSelectionData.selectedDateInfos.includes(day.dateInfo)
-        ) {
-          this.priviteSelectionData.selectedDateInfos.push(day.dateInfo);
+        if (!this.m_selectedDateInfoArr.includes(day.dateInfo)) {
+          this.m_selectedDateInfoArr.push(day.dateInfo);
         }
         this.$emit(
           "didSelectedDate",
-          this.priviteSelectionData,
+          { selectedDateInfoArr: this.m_selectedDateInfoArr },
           this.m_selectionType
         );
       } else if (this.m_selectionType == "range") {
-        if (
-          this.priviteSelectionData.rangeStart &&
-          this.priviteSelectionData.rangeEnd
-        ) {
+        if (this.m_rangeStart && this.m_rangeEnd) {
           // 两个都选了  重新选择开始的
-          this.priviteSelectionData.rangeEnd = null;
-          this.priviteSelectionData.rangeStart = day.dateInfo;
+          this.m_rangeEnd = "";
+          this.m_rangeStart = day.dateInfo;
         } else {
-          if (this.priviteSelectionData.rangeStart) {
-            if (
-              day.orign.isBefore(
-                dayjs(this.priviteSelectionData.rangeStart),
-                "day"
-              )
-            ) {
+          if (this.m_rangeStart) {
+            if (day.orign.isBefore(dayjs(this.m_rangeStart), "day")) {
               // 第二次选的 是否小于 第一次的
-              this.priviteSelectionData.rangeEnd =
-                this.priviteSelectionData.rangeStart;
-              this.priviteSelectionData.rangeStart = day.dateInfo;
+              this.m_rangeEnd = this.m_rangeStart;
+              this.m_rangeStart = day.dateInfo;
             } else {
-              this.priviteSelectionData.rangeEnd = day.dateInfo;
+              this.m_rangeEnd = day.dateInfo;
             }
             this.$emit(
               "didSelectedDate",
-              this.priviteSelectionData,
+              { rangeStart: this.m_rangeStart, rangeEnd: this.m_rangeEnd },
               this.m_selectionType
             );
           } else {
-            this.priviteSelectionData.rangeStart = day.dateInfo;
+            this.m_rangeStart = day.dateInfo;
           }
         }
       } else if (this.m_selectionType == "week") {
         this.handleWeekIdxClick(week, false);
       }
 
-      this.$nextTick(() => {
-        this.checkSelectedDate(this.month0);
-        this.$forceUpdate();
-      });
+      this.checkSelectedDate(this.month0);
+      // this.$forceUpdate();
     },
     handleWeekIdxClick(week, reload = true) {
       if (this.m_selectionType == "week") {
-        this.priviteSelectionData.rangeStart = null;
-        this.priviteSelectionData.rangeEnd = null;
+        this.m_weekRangeStart = null;
+        this.m_weekRangeEnd = null;
         let start = week.days[0];
         let end = week.days[week.days.length - 1];
-        this.priviteSelectionData.rangeStart = start.dateInfo;
-        this.priviteSelectionData.rangeEnd = end.dateInfo;
+        this.m_weekRangeStart = start.dateInfo;
+        this.m_weekRangeEnd = end.dateInfo;
 
         this.$emit(
           "didSelectedDate",
-          this.priviteSelectionData,
+          {
+            weekRangeStart: this.m_weekRangeStart,
+            weekRangeEnd: this.m_weekRangeEnd,
+          },
           this.m_selectionType
         );
       }
@@ -415,8 +481,16 @@ export default {
           }
         }
 
-        if (this.priviteSelectionData.rangeStart) {
-          let start = dayjs(this.priviteSelectionData.rangeStart);
+        let _rstart = this.m_rangeStart;
+        let _rend = this.m_rangeEnd;
+
+        if (this.m_selectionType == "week") {
+          _rstart = this.m_weekRangeStart;
+          _rend = this.m_weekRangeEnd;
+        }
+
+        if (_rstart) {
+          let start = dayjs(_rstart);
           for (const week of monthArr) {
             for (const day of week.days) {
               if (day.orign.isSame(start, "day")) {
@@ -427,8 +501,8 @@ export default {
           }
         }
 
-        if (this.priviteSelectionData.rangeEnd) {
-          let end = dayjs(this.priviteSelectionData.rangeEnd);
+        if (_rend) {
+          let end = dayjs(_rend);
           for (const week of monthArr) {
             for (const day of week.days) {
               if (day.orign.isSame(end, "day")) {
@@ -438,20 +512,10 @@ export default {
           }
         }
 
-        if (
-          this.priviteSelectionData.rangeStart &&
-          this.priviteSelectionData.rangeEnd
-        ) {
+        if (_rstart && _rend) {
           for (const week of monthArr) {
             for (const day of week.days) {
-              if (
-                day.orign.isBetween(
-                  this.priviteSelectionData.rangeStart,
-                  this.priviteSelectionData.rangeEnd,
-                  "day",
-                  "[]"
-                )
-              ) {
+              if (day.orign.isBetween(_rstart, _rend, "day", "[]")) {
                 day.isSelected = true;
                 if (this.m_selectionType == "week" && !week.isSelected) {
                   week.isSelected = true;
@@ -462,10 +526,15 @@ export default {
         }
       } else {
         // 单选或多选
+        let _tmp = this.m_selectedDateInfoArr;
+        if (this.m_selectionType == "single") {
+          _tmp = [this.m_selectedDateInfo];
+        }
+
         for (const week of monthArr) {
           for (const day of week.days) {
             day.isSelected = false;
-            for (const _sDay of this.priviteSelectionData.selectedDateInfos) {
+            for (const _sDay of _tmp) {
               if (day.orign.isSame(dayjs(_sDay), "day")) {
                 day.isSelected = true;
               }
