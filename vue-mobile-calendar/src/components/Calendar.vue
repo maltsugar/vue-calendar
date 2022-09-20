@@ -671,8 +671,9 @@ onMounted(() => {
 </script>
 
 <style lang="scss" scoped>
+$rowHeight: 32;
+
 .calendar-page {
-  $rowHeight: 32;
   $selectedRadius: 8px;
   background-color: #fff;
 
@@ -766,8 +767,8 @@ onMounted(() => {
 
             .day-num {
               display: flex;
-              width: 32px;
-              height: 32px;
+              width: #{$rowHeight}px;
+              height: #{$rowHeight}px;
               align-items: center;
               justify-content: center;
               font-weight: bold;
@@ -811,7 +812,7 @@ onMounted(() => {
             .day-num {
               background-color: unset;
               width: unset;
-              height: unset;
+              // height: unset;
             }
           }
 
