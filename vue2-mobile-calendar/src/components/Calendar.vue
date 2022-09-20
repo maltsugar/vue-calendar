@@ -139,9 +139,9 @@ export default {
       type: Array,
       default: () => ["一", "二", "三", "四", "五", "六", "日"],
     },
-    // 最小和最大日期
-    minDate: { type: String, default: "2022-01-01" },
-    maxDate: { type: String, default: "2023-12-31" },
+    // 最小和最大日期 (String 或 dayjs对象)
+    minDate: { type: String | Object, default: "2022-01-01" },
+    maxDate: { type: String | Object, default: "2023-12-31" },
 
     // 日期选择类型， single单选  multiple多选  range范围  week整周
     selectionType: { type: String, default: "single" },

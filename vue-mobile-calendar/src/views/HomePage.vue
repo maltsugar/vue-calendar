@@ -35,6 +35,7 @@
     :weekIndexTitle="weekIndexTitle"
     :weekStartDay="weekStartDay"
     :weekTitles="weekTitles"
+    :maxDate="calendarMaxDate"
     :selectionType="dateSelectType"
     :selectedDateInfo="selectedDateInfo"
     :selectedDateInfoArr="selectedDateInfoArr"
@@ -45,6 +46,10 @@
     @didSelectedDate="canlendarHandle"
   />
 </template>
+
+<script lang="ts">
+import dayjs from "dayjs";
+</script>
 
 <script setup lang="ts">
 import { ref, computed } from "vue";
@@ -75,6 +80,9 @@ const weekTitlesConfig = ref([
   },
 ]);
 const showWeekOrder = ref(true);
+
+// const calendarMaxDate = ref("2023-12-31");
+const calendarMaxDate = ref(dayjs("2025-01-01"));
 
 // calendar default data
 const selectedDateInfo = ref("2022-09-15");

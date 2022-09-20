@@ -36,6 +36,7 @@
       :weekIndexTitle="weekIndexTitle"
       :weekStartDay="weekStartDay"
       :weekTitles="weekTitles"
+      :maxDate="calendarMaxDate"
       :selectionType="dateSelectType"
       :selectedDateInfo="selectedDateInfo"
       :selectedDateInfoArr="selectedDateInfoArr"
@@ -49,6 +50,7 @@
 </template>
 
 <script>
+import dayjs from "dayjs";
 import Calendar from "@/components/Calendar.vue";
 
 const wtitlesConfig = () => [
@@ -85,6 +87,7 @@ export default {
 
       weekTitlesConfig: wtitlesConfig(),
       weekTilesConfigIdx: 0,
+      calendarMaxDate: undefined,
 
       // calendar default data
       selectedDateInfo: "2022-09-15",
@@ -108,6 +111,11 @@ export default {
     weekTitles() {
       return this.weekTitlesConfig[this.weekTilesConfigIdx].content;
     },
+  },
+
+  mounted() {
+    // this.calendarMaxDate = "2024-01-01";
+    this.calendarMaxDate = dayjs("2025-01-01");
   },
 
   methods: {
