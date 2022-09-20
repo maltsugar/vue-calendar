@@ -110,3 +110,30 @@ export function getFullMonthDaysInDate(
   // console.log("fullMonthWeeks", fullMonthWeeks)
   return fullMonthWeeks;
 }
+
+/**
+ * 根据 周开始日、diffN， 计算距离当前周 diffN的目标周 开始结束日期
+ * @param {*} diffN T+(diffN)周
+ * @param {*} weekStartDay 周开始星期，  0周日 1周一 2周二 ...
+ * @rettun 返回获取到的周 开始日，结束日
+ */
+export function getWeekRangeByDiff(
+  diffN: number,
+  weekStartDay: number,
+  format = "YYYY-MM-DD"
+) {
+  let diffDays = 7 * diffN;
+
+  // 当前周几
+  let now = dayjs().startOf("day");
+  let curDay = now.day();
+  let dv = curDay - weekStartDay; // 当前周几 距离 周开始日 的差值
+  if (dv < 0) {
+    dv += 7;
+  }
+  diffDays += -1 * dv;
+
+  let date0 = now.add(diffDays, "day");
+  let date1 = date0.add(6, "day");
+  return { start: date0.format(format), end: date1.format(format) };
+}

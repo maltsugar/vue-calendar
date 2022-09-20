@@ -90,7 +90,7 @@ export function getFullMonthDaysInDate(date0, weekStartDay = 0) {
 }
 
 /**
- * 根据周开始日、diffN， 计算目标周的开始结束日期
+ * 根据 周开始日、diffN， 计算距离当前周 diffN的目标周 开始结束日期
  * @param {*} diffN T+(diffN)周
  * @param {*} weekStartDay 周开始星期，  0周日 1周一 2周二 ...
  * @rettun 返回获取到的周 开始日，结束日
