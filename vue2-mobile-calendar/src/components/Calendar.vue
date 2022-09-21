@@ -114,10 +114,10 @@ import dayjs from "dayjs";
 const isBetween = require("dayjs/plugin/isBetween");
 dayjs.extend(isBetween);
 
-const isSameOrBefore = require("dayjs/plugin/isSameOrBefore");
-dayjs.extend(isSameOrBefore);
-const isSameOrAfter = require("dayjs/plugin/isSameOrAfter");
-dayjs.extend(isSameOrAfter);
+// const isSameOrBefore = require("dayjs/plugin/isSameOrBefore");
+// dayjs.extend(isSameOrBefore);
+// const isSameOrAfter = require("dayjs/plugin/isSameOrAfter");
+// dayjs.extend(isSameOrAfter);
 
 let touchStartX;
 let touchStartY;
