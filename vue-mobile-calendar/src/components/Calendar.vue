@@ -149,8 +149,8 @@ interface Props {
   weekTitles?: Array<string>;
 
   // 最小和最大日期
-  minDate?: string | dayjs.Dayjs;
-  maxDate?: string | dayjs.Dayjs;
+  minDate?: dayjs.ConfigType;
+  maxDate?: dayjs.ConfigType;
 
   selectionType?: CalendarSelectionType; // 日期选择类型
   /**

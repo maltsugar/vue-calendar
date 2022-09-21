@@ -109,6 +109,11 @@ const canlendarHandle = (
 ) => {
   console.log("clddata", clddata);
   console.log("type", type);
+  if (type == CalendarSelectionType.multiple) {
+    if (clddata.selectedDateInfoArr) {
+      console.log("1111", [...clddata.selectedDateInfoArr]);
+    }
+  }
 };
 
 function onTypeClick(idx: number) {
