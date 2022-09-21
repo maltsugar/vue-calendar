@@ -80,8 +80,8 @@ export function getFullMonthDaysInDate(
       firstDay = 7;
     }
   }
-  let fullMonthWeeks = [];
-  let tmp = [];
+  let fullMonthWeeks: WeekConfig[] = [];
+  let tmp: DayConfig[] = [];
   for (let i = 0; i < 7 * 6; i++) {
     let diffDay = -1 * firstDay + i + weekStartDay;
     let d = _date0.add(diffDay, "day");
