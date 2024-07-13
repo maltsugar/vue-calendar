@@ -2,13 +2,8 @@
   <section class="demo">
     <p>日期选取类型</p>
     <ul class="type-wrapper">
-      <li
-        class="btn"
-        v-for="(item, index) in typeBtns"
-        :key="index"
-        :class="{ actived: index == curTypeIdx }"
-        @click="onTypeClick(index)"
-      >
+      <li class="btn" v-for="(item, index) in typeBtns" :key="index" :class="{ actived: index == curTypeIdx }"
+        @click="onTypeClick(index)">
         {{ item }}
       </li>
     </ul>
@@ -20,36 +15,19 @@
     <div class="week-title">
       <p>自定义周开始日期</p>
       <ul class="week-idx-wrapper">
-        <li
-          v-for="(item, index) in weekTitlesConfig"
-          :key="index"
-          @click="handleCellClick(index)"
-        >
+        <li v-for="(item, index) in weekTitlesConfig" :key="index" @click="handleCellClick(index)">
           <span v-if="item.selected">❤️</span>
           {{ item.content.join("、") }}
         </li>
       </ul>
     </div>
   </section>
-  <Calendar
-    :weekIndexTitle="weekIndexTitle"
-    :weekStartDay="weekStartDay"
-    :weekTitles="weekTitles"
-    :minDate="calendarMinDate"
-    :maxDate="calendarMaxDate"
-    precisionMinMax
-    :selectionType="dateSelectType"
-    :selectedDateInfo="selectedDateInfo"
-    :selectedDateInfoArr="selectedDateInfoArr"
-    :rangeStart="rangeStart"
-    :rangeEnd="rangeEnd"
-    :weekRangeStart="weekRangeStart"
-    :weekRangeEnd="weekRangeEnd"
-    :maxSelectDayCount="10"
-    defCalendarView="end"
-    @didSelectedDate="canlendarHandle"
-    @invalidSelect="handleInvalidSelect"
-  />
+  <Calendar :weekIndexTitle="weekIndexTitle" :weekStartDay="weekStartDay" :weekTitles="weekTitles"
+    :minDate="calendarMinDate" :maxDate="calendarMaxDate" :precisionMinMax="precisionMinMax"
+    :selectionType="dateSelectType" :selectedDateInfo="selectedDateInfo" :selectedDateInfoArr="selectedDateInfoArr"
+    :rangeStart="rangeStart" :rangeEnd="rangeEnd" :weekRangeStart="weekRangeStart" :weekRangeEnd="weekRangeEnd"
+    :maxSelectDayCount="10" defCalendarView="end" @didSelectedDate="canlendarHandle"
+    @invalidSelect="handleInvalidSelect" />
 </template>
 
 <script lang="ts">
@@ -86,9 +64,15 @@ const weekTitlesConfig = ref([
 ]);
 const showWeekOrder = ref(true);
 
-// const calendarMaxDate = ref("2023-12-31");
-const calendarMaxDate = ref(dayjs("2025-01-10"));
-const calendarMinDate = ref("2024-04-13")
+const calendarMaxDate = ref<dayjs.ConfigType>()
+const calendarMinDate = ref<dayjs.ConfigType>()
+const precisionMinMax = ref(false)
+setTimeout(() => {
+  calendarMinDate.value = "2024-04-13"
+  calendarMaxDate.value = dayjs("2025-01-10");
+  precisionMinMax.value = true
+}, 2000);
+
 
 // calendar default data
 const selectedDateInfo = ref("2022-09-15");
@@ -122,8 +106,8 @@ const canlendarHandle = (
   }
 };
 
-const handleInvalidSelect = (info:any) => {
-  console.log('info',info)
+const handleInvalidSelect = (info: any) => {
+  console.log('info', info)
 }
 
 function onTypeClick(idx: number) {
@@ -150,6 +134,7 @@ function handleCellClick(idx: number) {
   height: 220px;
   padding: 10px;
   background-color: #f9f4dc;
+
   p {
     font-size: 14px;
     font-weight: bold;
@@ -179,6 +164,7 @@ function handleCellClick(idx: number) {
   .week-order {
     display: flex;
     align-items: center;
+
     input {
       height: 20px;
       width: 20px;
@@ -192,6 +178,7 @@ function handleCellClick(idx: number) {
       border-bottom: 1px solid #ccc;
       padding-left: 30px;
       position: relative;
+
       span {
         position: absolute;
         left: 5px;

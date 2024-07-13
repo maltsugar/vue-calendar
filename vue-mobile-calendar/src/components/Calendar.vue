@@ -342,6 +342,14 @@ watch(m_selectionType, () => {
   reloadCalendarData();
 });
 
+watch(() => props.minDate, () => {
+  reloadCalendarData()
+})
+watch(() => props.maxDate, () => {
+  reloadCalendarData()
+})
+
+
 // 快捷切换日期
 function handleChangBtnAction(val: number) {
   if (Math.abs(val) == 1) {
