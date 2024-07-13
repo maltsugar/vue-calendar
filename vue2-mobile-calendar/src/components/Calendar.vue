@@ -142,9 +142,21 @@ export default {
     // 最小和最大日期 (String 或 dayjs对象)
     minDate: { type: String | Object, default: "2022-01-01" },
     maxDate: { type: String | Object, default: "2023-12-31" },
+    precisionMinMax: Boolean, // min max 配置是否精确到日
 
     // 日期选择类型， single单选  multiple多选  range范围  week整周
     selectionType: { type: String, default: "single" },
+
+    // 最大选择天数，range和multiple时 生效, 不满足条件时触发invalidSelect回调事件，回调事件参数包含选择天数
+    maxSelectDayCount: {
+      type: Number,
+      validator: (val) => {
+        if (val <= 0) {
+          throw new Error("maxSelectDayCount 必须大于0才有意义");
+        }
+        return val > 0;
+      },
+    },
 
     /**
      * 默认的日期
@@ -155,6 +167,16 @@ export default {
     rangeEnd: { type: String, default: "" }, // range
     weekRangeStart: { type: String, default: "" }, // week
     weekRangeEnd: { type: String, default: "" }, // week
+
+    /**
+     *  默认日历视图，日历首次打开时展示的月份
+     *  today：默认值，今天所在的日期；
+     *  selectedDate: 设置的默认日期；
+     *  start: 范围的起始值(包括周)
+     *  end: 范围的结束值(包括周)
+     *  “xxxx-xx-xx” 直接给具体的日期
+     */
+    defCalendarView: { type: String, default: "today" },
   },
 
   data() {
@@ -323,11 +345,21 @@ export default {
       this.reloadCalendarData();
     },
     m_selectionType() {
+      this.reloadDefDate();
+      this.reloadCalendarData();
+    },
+
+    minDate() {
+      this.reloadCalendarData();
+    },
+    maxDate() {
       this.reloadCalendarData();
     },
   },
 
   mounted() {
+    this.reloadDefDate();
+
     this.reloadCalendarData();
   },
 
@@ -394,6 +426,18 @@ export default {
           // 已经包含  取消选择
           this.m_selectedDateInfoArr.splice(_idx, 1);
         } else {
+          const _selectedCnt = this.m_selectedDateInfoArr.length;
+          if (
+            this.maxSelectDayCount &&
+            _selectedCnt >= this.maxSelectDayCount
+          ) {
+            this.sentInvalidSelectInfo({
+              type: "maxSelectDayCount",
+              count: _selectedCnt,
+            });
+            return;
+          }
+
           this.m_selectedDateInfoArr.push(day.dateInfo);
         }
         this.$emit(
@@ -408,6 +452,20 @@ export default {
           this.m_rangeStart = day.dateInfo;
         } else {
           if (this.m_rangeStart) {
+            if (this.maxSelectDayCount) {
+              const d1 = day.orign.startOf("day");
+              const d2 = dayjs(this.m_rangeStart).startOf("day");
+              let diff = d1.diff(d2, "day");
+              diff = Math.abs(diff) + 1;
+              if (diff > this.maxSelectDayCount) {
+                this.sentInvalidSelectInfo({
+                  type: "maxSelectDayCount",
+                  count: diff,
+                });
+                return;
+              }
+            }
+
             if (day.orign.isBefore(dayjs(this.m_rangeStart), "day")) {
               // 第二次选的 是否小于 第一次的
               this.m_rangeEnd = this.m_rangeStart;
@@ -451,6 +509,16 @@ export default {
       if (reload) {
         this.checkSelectedDate(this.month0);
       }
+    },
+
+    // 发送无效选择告警
+    sentInvalidSelectInfo(info) {
+      if (info.type == "maxSelectDayCount") {
+        console.error(
+          `选择了${info.count}天，大于设置的最大数量${this.maxSelectDayCount}`
+        );
+      }
+      this.$emit("invalidSelect", info);
     },
 
     touchstart(event) {
@@ -528,14 +596,63 @@ export default {
       this.reloadCalendarData();
     },
 
+    reloadDefDate() {
+      let defDate = dayjs();
+      if (this.defCalendarView == "selectedDate") {
+        defDate = dayjs(this.selectedDateInfo);
+      } else if (this.defCalendarView == "start") {
+        if (this.selectionType == "range") {
+          defDate = dayjs(this.rangeStart);
+        }
+        if (this.selectionType == "week") {
+          defDate = dayjs(this.weekRangeStart);
+        }
+      } else if (this.defCalendarView == "end") {
+        if (this.selectionType == "range") {
+          defDate = dayjs(this.rangeEnd);
+        }
+        if (this.selectionType == "week") {
+          defDate = dayjs(this.weekRangeEnd);
+        }
+      } else {
+        defDate = dayjs(this.defCalendarView);
+      }
+
+      let _tmpDate = defDate.toDate();
+      if (_tmpDate instanceof Date && !isNaN(_tmpDate.getTime())) {
+        // 传入的日期有效
+        this.curDate = defDate;
+      }
+    },
+
     reloadCalendarData() {
       // console.log("刷新日历数据");
       let _dateA = this.curDate.add(-1, "month");
       let _dateB = this.curDate.add(1, "month");
 
-      this.monthA = getFullMonthDaysInDate(_dateA, this.weekStartDay);
-      this.month0 = getFullMonthDaysInDate(this.curDate, this.weekStartDay);
-      this.monthB = getFullMonthDaysInDate(_dateB, this.weekStartDay);
+      let _minmaxConfig;
+      if (this.precisionMinMax) {
+        _minmaxConfig = {
+          minDay: this.minDate,
+          maxDay: this.maxDate,
+        };
+      }
+
+      this.monthA = getFullMonthDaysInDate(
+        _dateA,
+        _minmaxConfig,
+        this.weekStartDay
+      );
+      this.month0 = getFullMonthDaysInDate(
+        this.curDate,
+        _minmaxConfig,
+        this.weekStartDay
+      );
+      this.monthB = getFullMonthDaysInDate(
+        _dateB,
+        _minmaxConfig,
+        this.weekStartDay
+      );
 
       this.checkSelectedDate(this.month0);
       this.checkSelectedDate(this.monthA);

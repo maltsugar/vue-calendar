@@ -35,7 +35,9 @@
     :weekIndexTitle="weekIndexTitle"
     :weekStartDay="weekStartDay"
     :weekTitles="weekTitles"
+    :minDate="calendarMinDate"
     :maxDate="calendarMaxDate"
+    precisionMinMax
     :selectionType="dateSelectType"
     :selectedDateInfo="selectedDateInfo"
     :selectedDateInfoArr="selectedDateInfoArr"
@@ -43,7 +45,10 @@
     :rangeEnd="rangeEnd"
     :weekRangeStart="weekRangeStart"
     :weekRangeEnd="weekRangeEnd"
+    :maxSelectDayCount="10"
+    defCalendarView="end"
     @didSelectedDate="canlendarHandle"
+    @invalidSelect="handleInvalidSelect"
   />
 </template>
 
@@ -82,15 +87,16 @@ const weekTitlesConfig = ref([
 const showWeekOrder = ref(true);
 
 // const calendarMaxDate = ref("2023-12-31");
-const calendarMaxDate = ref(dayjs("2025-01-01"));
+const calendarMaxDate = ref(dayjs("2025-01-10"));
+const calendarMinDate = ref("2024-04-13")
 
 // calendar default data
 const selectedDateInfo = ref("2022-09-15");
 const selectedDateInfoArr = ref(["2022-09-13", "2022-09-02", "2022-09-22"]);
 const rangeStart = ref("2022-09-05");
-const rangeEnd = ref("2022-09-22");
+const rangeEnd = ref("2023-09-22");
 const weekRangeStart = ref("2022-09-11");
-const weekRangeEnd = ref("2022-09-17");
+const weekRangeEnd = ref("2022-10-17");
 
 const dateSelectType = ref(CalendarSelectionType.single);
 const weekStartDay = ref(0);
@@ -115,6 +121,10 @@ const canlendarHandle = (
     }
   }
 };
+
+const handleInvalidSelect = (info:any) => {
+  console.log('info',info)
+}
 
 function onTypeClick(idx: number) {
   curTypeIdx.value = idx;

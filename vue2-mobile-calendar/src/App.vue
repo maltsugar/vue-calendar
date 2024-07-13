@@ -36,7 +36,9 @@
       :weekIndexTitle="weekIndexTitle"
       :weekStartDay="weekStartDay"
       :weekTitles="weekTitles"
+      :minDate="calendarMinDate"
       :maxDate="calendarMaxDate"
+      precisionMinMax
       :selectionType="dateSelectType"
       :selectedDateInfo="selectedDateInfo"
       :selectedDateInfoArr="selectedDateInfoArr"
@@ -44,7 +46,10 @@
       :rangeEnd="rangeEnd"
       :weekRangeStart="weekRangeStart"
       :weekRangeEnd="weekRangeEnd"
+      :maxSelectDayCount="10"
+      defCalendarView="start"
       @didSelectedDate="canlendarHandle"
+      @invalidSelect="handleInvalidSelect"
     />
   </div>
 </template>
@@ -87,13 +92,14 @@ export default {
 
       weekTitlesConfig: wtitlesConfig(),
       weekTilesConfigIdx: 0,
+      calendarMinDate: undefined,
       calendarMaxDate: undefined,
 
       // calendar default data
       selectedDateInfo: "2022-09-15",
       selectedDateInfoArr: ["2022-09-13", "2022-09-02", "2022-09-22"],
       rangeStart: "2022-09-05",
-      rangeEnd: "2022-09-22",
+      rangeEnd: "2023-09-22",
       weekRangeStart: "2022-09-11",
       weekRangeEnd: "2022-09-17",
     };
@@ -115,7 +121,9 @@ export default {
 
   mounted() {
     // this.calendarMaxDate = "2024-01-01";
-    this.calendarMaxDate = dayjs("2025-01-01");
+
+    this.calendarMinDate = "2024-07-03";
+    this.calendarMaxDate = dayjs("2024-07-25");
   },
 
   methods: {
@@ -153,6 +161,10 @@ export default {
       console.log("dateInfo", dateInfo);
       console.log("actionType", actionType);
     },
+
+    handleInvalidSelect(info) {
+      console.log('info',info)
+    }
   },
 };
 </script>

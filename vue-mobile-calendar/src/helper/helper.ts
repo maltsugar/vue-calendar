@@ -21,7 +21,7 @@ export function deepClone<T>(tSource: T, tTarget?: Record<string, any> | T): T {
   for (const key in tSource) {
     if (Object.prototype.hasOwnProperty.call(tSource, key)) {
       if (typeof tSource[key] === "object" && typeof tSource[key] !== null) {
-        tTarget[key] = isArray(tSource[key]) ? [] : {};
+        tTarget[key] = isArray(tSource[key]) ? [] as any : {};
         deepClone(tSource[key], tTarget[key]);
       } else {
         tTarget[key] = tSource[key];

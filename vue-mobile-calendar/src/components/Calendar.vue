@@ -2,104 +2,50 @@
   <div class="calendar-page">
     <div class="tool-base">
       <div class="left">
-        <img
-          class="q-btn"
-          src="@/assets/img/cal_db_leftarrow.png"
-          :class="{ disabled: quickChangeBtnStatus.dbLeft == false }"
-          alt=""
-          @click="handleChangBtnAction(-2)"
-        />
-        <img
-          class="q-btn"
-          src="@/assets/img/cal_leftarrow.png"
-          :class="{ disabled: quickChangeBtnStatus.left == false }"
-          alt=""
-          @click="handleChangBtnAction(-1)"
-        />
+        <img class="q-btn" src="@/assets/img/cal_db_leftarrow.png"
+          :class="{ disabled: quickChangeBtnStatus.dbLeft == false }" alt="" @click="handleChangBtnAction(-2)" />
+        <img class="q-btn" src="@/assets/img/cal_leftarrow.png"
+          :class="{ disabled: quickChangeBtnStatus.left == false }" alt="" @click="handleChangBtnAction(-1)" />
       </div>
       <div class="mid">{{ curTitle }}</div>
       <div class="right">
-        <img
-          class="q-btn"
-          src="@/assets/img/cal_rightarrow.png"
-          :class="{ disabled: quickChangeBtnStatus.right == false }"
-          alt=""
-          @click="handleChangBtnAction(1)"
-        />
-        <img
-          class="q-btn"
-          src="@/assets/img/cal_db_rightarrow.png"
-          :class="{ disabled: quickChangeBtnStatus.dbRight == false }"
-          alt=""
-          @click="handleChangBtnAction(2)"
-        />
+        <img class="q-btn" src="@/assets/img/cal_rightarrow.png"
+          :class="{ disabled: quickChangeBtnStatus.right == false }" alt="" @click="handleChangBtnAction(1)" />
+        <img class="q-btn" src="@/assets/img/cal_db_rightarrow.png"
+          :class="{ disabled: quickChangeBtnStatus.dbRight == false }" alt="" @click="handleChangBtnAction(2)" />
       </div>
     </div>
     <div class="week-header">
-      <div
-        v-for="(t, idx) in weekHeaders"
-        :key="idx"
-        :class="showWeekIdx && idx == 0 ? 'weekIdx' : 'h-item'"
-      >
+      <div v-for="(t, idx) in weekHeaders" :key="idx" :class="showWeekIdx && idx == 0 ? 'weekIdx' : 'h-item'">
         {{ t }}
       </div>
     </div>
-    <div
-      class="base"
-      ref="base"
-      @touchstart="touchstart"
-      @touchmove="touchmove"
-      @touchend="touchend"
-    >
-      <div
-        class="calendar-wrapper c-grid"
-        :style="{ transform: `translate3d(${-translateX * 100}%, 0, 0)` }"
-      >
-        <div
-          v-for="(month, midx) in dataArr"
-          :key="midx"
-          class="c-grid month-base"
-          :style="{
-            transform: `translate3d(${
-              (midx - 1 + translateX + (isTouching ? touch.ratioX : 0)) * 100
+    <div class="base" ref="base" @touchstart="touchstart" @touchmove="touchmove" @touchend="touchend">
+      <div class="calendar-wrapper c-grid" :style="{ transform: `translate3d(${-translateX * 100}%, 0, 0)` }">
+        <div v-for="(month, midx) in dataArr" :key="midx" class="c-grid month-base" :style="{
+          transform: `translate3d(${(midx - 1 + translateX + (isTouching ? touch.ratioX : 0)) * 100
             }%, 0, 0)`,
-            transitionDuration: isTouching ? '0s' : '.3s',
-          }"
-        >
-          <div
-            class="week-base"
-            v-for="(week, widx) in month"
-            :key="widx"
-            :class="{
-              rangeSelectionType: [
-                CalendarSelectionType.range,
-                CalendarSelectionType.week,
-              ].includes(selectionType),
-              weekIdxSelectionType:
-                selectionType == CalendarSelectionType.week && showWeekIdx,
-            }"
-          >
-            <div
-              class="weekIdx"
-              v-if="showWeekIdx"
-              :class="{ selected: week.isSelected }"
-              @click="handleWeekIdxClick(week)"
-            >
+          transitionDuration: isTouching ? '0s' : '.3s',
+        }">
+          <div class="week-base" v-for="(week, widx) in month" :key="widx" :class="{
+            rangeSelectionType: [
+              CalendarSelectionType.range,
+              CalendarSelectionType.week,
+            ].includes(selectionType),
+            weekIdxSelectionType:
+              selectionType == CalendarSelectionType.week && showWeekIdx,
+          }">
+            <div class="weekIdx" v-if="showWeekIdx" :class="{ selected: week.isSelected }"
+              @click="handleWeekIdxClick(week)">
               {{ week.weekIdx }}
             </div>
-            <div
-              v-for="(day, didx) in week.days"
-              :key="didx"
-              class="day-base"
-              :class="{
-                selected: day.isSelected,
-                rangeStart: day.isRangeStart,
-                rangeEnd: day.isRangeEnd,
-                gray: day.isGray,
-                today: day.isToday,
-              }"
-              @click="handleDayClick(day, week)"
-            >
+            <div v-for="(day, didx) in week.days" :key="didx" class="day-base" :class="{
+              selected: day.isSelected,
+              rangeStart: day.isRangeStart,
+              rangeEnd: day.isRangeEnd,
+              gray: day.isGray,
+              today: day.isToday,
+            }" @click="handleDayClick(day, week)">
               <span class="day-num">
                 {{ day.orign.date() }}
               </span>
@@ -143,6 +89,13 @@ export interface CalendarInfoData {
 <script setup lang="ts">
 import { ref, unref, computed, onMounted, watch } from "vue";
 
+import type { CalenderInfoConfig } from "../helper/calendarTools"
+
+// 发送无效选择告警
+interface ErrorInfo {
+  type: string,
+  count: number
+}
 interface Props {
   weekStartDay?: number; // 一周开始星期， 0为周日
   weekIndexTitle?: string; // 周序号标题，不写 则不显示
@@ -151,8 +104,13 @@ interface Props {
   // 最小和最大日期
   minDate?: dayjs.ConfigType;
   maxDate?: dayjs.ConfigType;
+  precisionMinMax?: boolean, // min max 配置是否精确到日
 
   selectionType?: CalendarSelectionType; // 日期选择类型
+
+  // 最大选择天数，range和multiple时 生效, 不满足条件时触发invalidSelect回调事件，回调事件参数包含选择天数
+  maxSelectDayCount?: number
+
   /**
    * 默认的日期 格式 YYYY-MM-DD
    */
@@ -162,6 +120,16 @@ interface Props {
   rangeEnd?: string; // range
   weekRangeStart?: string; // week
   weekRangeEnd?: string; // week
+
+  /**
+   *  默认日历视图，日历首次打开时展示的月份
+   *  today：默认值，今天所在的日期；
+   *  selectedDate: 设置的默认日期；
+   *  start: 范围的起始值(包括周)
+   *  end: 范围的结束值(包括周)
+   *  “xxxx-xx-xx” 直接给具体的日期
+   */
+  defCalendarView?: string
 }
 
 let touchStartX: number;
@@ -179,14 +147,18 @@ const props = withDefaults(defineProps<Props>(), {
   weekTitles: () => ["一", "二", "三", "四", "五", "六", "日"],
   minDate: "2022-01-01",
   maxDate: "2023-12-31",
+  precisionMinMax: false,
 
   selectionType: CalendarSelectionType.single,
+
   selectedDateInfo: "", // single
   selectedDateInfoArr: () => [], // multiple
   rangeStart: "", // range
   rangeEnd: "", // range
   weekRangeStart: "", // week
   weekRangeEnd: "", // week
+
+  defCalendarView: "today"
 });
 
 const emit = defineEmits<{
@@ -194,6 +166,11 @@ const emit = defineEmits<{
     e: "didSelectedDate",
     selectedData: CalendarInfoData,
     selectionType: CalendarSelectionType
+  ): void;
+
+  (
+    e: "invalidSelect",
+    info: ErrorInfo
   ): void;
 }>();
 
@@ -361,6 +338,7 @@ const m_selectionType = computed(() => {
   return props.selectionType;
 });
 watch(m_selectionType, () => {
+  reloadDefDate();
   reloadCalendarData();
 });
 
@@ -425,6 +403,18 @@ function handleDayClick(
       // 已经包含  取消选择
       m_selectedDateInfoArr.value.splice(_idx, 1);
     } else {
+      const _selectedCnt = m_selectedDateInfoArr.value.length;
+      if (
+        props.maxSelectDayCount &&
+        _selectedCnt >= props.maxSelectDayCount
+      ) {
+        sentInvalidSelectInfo({
+          type: "maxSelectDayCount",
+          count: _selectedCnt,
+        });
+        return;
+      }
+
       m_selectedDateInfoArr.value.push(day.dateInfo);
     }
     emit(
@@ -439,6 +429,20 @@ function handleDayClick(
       m_rangeStart.value = day.dateInfo;
     } else {
       if (m_rangeStart.value) {
+        if (props.maxSelectDayCount) {
+          const d1 = day.orign.startOf("day");
+          const d2 = dayjs(m_rangeStart.value).startOf("day");
+          let diff = d1.diff(d2, "day");
+          diff = Math.abs(diff) + 1;
+          if (diff > props.maxSelectDayCount) {
+            sentInvalidSelectInfo({
+              type: "maxSelectDayCount",
+              count: diff,
+            });
+            return;
+          }
+        }
+
         if (day.orign.isBefore(dayjs(m_rangeStart.value), "day")) {
           // 第二次选的 是否小于 第一次的
           m_rangeEnd.value = m_rangeStart.value;
@@ -484,6 +488,16 @@ function handleWeekIdxClick(week: calendarTools.WeekConfig, reload = true) {
   if (reload) {
     checkSelectedDate(month0.value);
   }
+}
+
+
+const sentInvalidSelectInfo = (info: ErrorInfo) => {
+  if (info.type == "maxSelectDayCount") {
+    console.error(
+      `选择了${info.count}天，大于设置的最大数量${props.maxSelectDayCount}`
+    );
+  }
+  emit("invalidSelect", info);
 }
 
 const touchstart = (event: TouchEvent) => {
@@ -560,22 +574,62 @@ const change = (type: number) => {
   reloadCalendarData();
 };
 
+const reloadDefDate = () => {
+  let defDate = dayjs();
+  if (props.defCalendarView == "selectedDate") {
+    defDate = dayjs(props.selectedDateInfo);
+  } else if (props.defCalendarView == "start") {
+    if (m_selectionType.value == CalendarSelectionType.range) {
+      defDate = dayjs(props.rangeStart);
+    }
+    if (m_selectionType.value == CalendarSelectionType.week) {
+      defDate = dayjs(props.weekRangeStart);
+    }
+  } else if (props.defCalendarView == "end") {
+    if (m_selectionType.value == CalendarSelectionType.range) {
+      defDate = dayjs(props.rangeEnd);
+    }
+    if (m_selectionType.value == CalendarSelectionType.week) {
+      defDate = dayjs(props.weekRangeEnd);
+    }
+  } else {
+    defDate = dayjs(props.defCalendarView);
+  }
+
+  let _tmpDate = defDate.toDate();
+  if (_tmpDate instanceof Date && !isNaN(_tmpDate.getTime())) {
+    // 传入的日期有效
+    curDate.value = defDate;
+  }
+}
+
 const reloadCalendarData = () => {
   // console.log("刷新日历数据");
 
   let _dateA = curDate.value.add(-1, "month");
   let _dateB = curDate.value.add(1, "month");
 
+  let _minmaxConfig: CalenderInfoConfig | undefined = void 0;
+  if (props.precisionMinMax) {
+    _minmaxConfig = {
+      minDay: props.minDate,
+      maxDay: props.maxDate,
+    };
+  }
+
   monthA.value = calendarTools.getFullMonthDaysInDate(
     _dateA,
+    _minmaxConfig,
     m_weekStartDay.value
   );
   month0.value = calendarTools.getFullMonthDaysInDate(
     curDate.value,
+    _minmaxConfig,
     m_weekStartDay.value
   );
   monthB.value = calendarTools.getFullMonthDaysInDate(
     _dateB,
+    _minmaxConfig,
     m_weekStartDay.value
   );
 
@@ -666,6 +720,7 @@ const checkSelectedDate = (monthArr: calendarTools.WeekConfig[]) => {
 };
 
 onMounted(() => {
+  reloadDefDate();
   reloadCalendarData();
 });
 </script>
@@ -693,6 +748,7 @@ $rowHeight: 32;
       &:first-of-type {
         margin-right: 16px;
       }
+
       &.disabled {
         opacity: 0.5;
         -webkit-filter: grayscale(100%);

@@ -1,4 +1,6 @@
 import dayjs from "dayjs";
+const isBetween = require("dayjs/plugin/isBetween");
+dayjs.extend(isBetween);
 
 /**
  * 给定一个日期 按照规则 获取是当年第几周
@@ -39,12 +41,21 @@ export function getWeekOfYear(date, weekStartDay = 0) {
 }
 
 /**
+ * 获取日期时的配置对象
+ * @typedef {Object} Config
+ * @property {string|Object} minDay 最小日
+ * @property {string|Object} maxDay 最大日
+ */
+
+/**
+ * 
  * 获取一个月的完整 日历， 为了视觉稳定， 每个月都是6行
  * @param {*} date0 为 dayjs可识别对象即可
+ * @param {Config} config 配置对象
  * @param {*} weekStartDay 为 周开始日： 0, 1, 2, 3, 4, 5, 6
  * @returns 一个月的完整日历
  */
-export function getFullMonthDaysInDate(date0, weekStartDay = 0) {
+export function getFullMonthDaysInDate(date0, config, weekStartDay = 0) {
   let dateFormat = "YYYY-MM-DD";
 
   let _date0 = dayjs(date0).date(1); // 设置为1号
@@ -73,6 +84,10 @@ export function getFullMonthDaysInDate(date0, weekStartDay = 0) {
     if (!d.isSame(_date0, "month")) {
       _dayObj.isGray = true;
     }
+    if (config && !d.isBetween(config.minDay, config.maxDay, 'D', '[]')) {
+      _dayObj.isGray = true;
+    }
+
     tmp.push(_dayObj);
 
     if (tmp.length == 7) {
